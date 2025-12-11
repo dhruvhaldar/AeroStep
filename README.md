@@ -24,6 +24,19 @@
 
 ---
 
+## File Structure
+
+```text
+.
+├── aerostep.cbl        # Main Source Code (COBOL)
+├── batch_input.txt     # Input: List of Component IDs to process
+├── system_config.cfg   # Input: Configuration thresholds
+├── aerostep.txt        # Output: Execution Log (Created at runtime)
+└── README.md           # Documentation
+```
+
+---
+
 ## Getting Started
 
 ### Prerequisites
@@ -58,45 +71,51 @@ The system behavior is controlled by `system_config.cfg`:
 MIN_PRESS=0080
 MAX_PRESS=0120
 MIN_HEAT=0200
-...
+MAX_HEAT=0300
+MAX_VIB=20.00
+QUAL_THRESH=070
 ```
 
-## Workflow Steps
+---
 
-1.  **Initialization**
-    *   Logs the start of processing.
-2.  **Pressure Test**
-    *   Simulates pressure chamber testing.
-    *   *Error Code:* `ERR-PRESS`
-3.  **Heat Treatment**
-    *   Simulates thermal stress testing.
-    *   *Error Code:* `ERR-HEAT`
-4.  **Vibration Test**
-    *   Simulates structural vibration testing.
-    *   *Error Code:* `ERR-VIB`
-5.  **Quality Inspection**
-    *   Simulates final inspection.
-    *   *Error Code:* `ERR-QUAL`
+## Troubleshooting
+
+| Error Message | Cause | Resolution |
+| :--- | :--- | :--- |
+| `FATAL ERROR: Could not open batch input file.` | Missing `batch_input.txt` | Create the file with one component ID per line. |
+| `FATAL: Config file missing.` | Missing `system_config.cfg` | Create the file with the required key-value pairs. |
+| `ERROR: Read failed status XX` | File permission or corruption | Check file permissions (`chmod +r ...`). |
 
 ---
 
 ## Code Highlights
 
 **Secure Logging with Checksum:**
+*Utilizes an intermediate buffer to construct the log message, calculates a checksum on that content, and appends it.*
+
 ```cobol
+STRING COMPONENT-ID DELIMITED BY SPACE
+       ";" WS-FIELD-NAME DELIMITED BY SPACE
+       ...
+       INTO WS-LOG-CONTENT
+
 PERFORM COMPUTE-CHECKSUM
-STRING REPORT-RECORD DELIMITED BY SIZE
+
+STRING WS-LOG-CONTENT DELIMITED BY SPACE
        ";CS:" WS-CHECKSUM-HEX
        INTO REPORT-RECORD
 WRITE REPORT-RECORD
 ```
 
-**Configuration Loading:**
+**Robust Configuration Loading:**
+*Uses `FUNCTION NUMVAL` to safely convert alphanumeric config values (which may have trailing spaces) into numeric thresholds.*
+
 ```cobol
 UNSTRING CONFIG-RECORD DELIMITED BY "="
     INTO WS-CONFIG-KEY WS-CONFIG-VAL
 EVALUATE WS-CONFIG-KEY
-    WHEN "MIN_PRESS" MOVE WS-CONFIG-VAL TO MIN-PRESS
+    WHEN "MIN_PRESS" COMPUTE MIN-PRESS = FUNCTION NUMVAL(WS-CONFIG-VAL)
+    WHEN "MAX_PRESS" COMPUTE MAX-PRESS = FUNCTION NUMVAL(WS-CONFIG-VAL)
     ...
 END-EVALUATE
 ```
