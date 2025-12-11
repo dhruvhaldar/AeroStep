@@ -1,13 +1,32 @@
 IDENTIFICATION DIVISION.
        PROGRAM-ID. AEROSTEP-UI.
+      *>*****************************************************************
+      *> SECURITY-LEVEL: UNCLASSIFIED
+      *> AUTHOR: JULES (AI AGENT)
+      *> DATE: 2025-12-11
+      *> PURPOSE:
+      *>   Simulates an aerospace component testing workflow (Pressure,
+      *>   Heat, Vibration, Quality) operating as a batch processor.
+      *>   Reads component IDs from batch_input.txt and writes detailed
+      *>   logs to aerostep.txt.
+      *>
+      *> STANDARDS COMPLIANCE:
+      *>   - Explicit scope terminators (END-IF, END-PERFORM)
+      *>   - File status checking for all I/O
+      *>   - Explicit initialization
+      *>   - Robust error handling
+      *>*****************************************************************
 
        ENVIRONMENT DIVISION.
        INPUT-OUTPUT SECTION.
        FILE-CONTROL.
            SELECT REPORT-FILE ASSIGN TO "aerostep.txt"
-               ORGANIZATION IS LINE SEQUENTIAL.
+               ORGANIZATION IS LINE SEQUENTIAL
+               FILE STATUS IS WS-REPORT-STATUS.
+
            SELECT BATCH-FILE ASSIGN TO "batch_input.txt"
-               ORGANIZATION IS LINE SEQUENTIAL.
+               ORGANIZATION IS LINE SEQUENTIAL
+               FILE STATUS IS WS-BATCH-STATUS.
 
        DATA DIVISION.
        FILE SECTION.
@@ -22,20 +41,24 @@ IDENTIFICATION DIVISION.
        01  WS-EOF                      PIC X VALUE "N".
        01  WS-FAILED                   PIC X VALUE "N".
 
+       *> File Status Codes
+       01  WS-REPORT-STATUS            PIC X(02) VALUE "00".
+       01  WS-BATCH-STATUS             PIC X(02) VALUE "00".
+
        *> Test Variables
-       01  WS-PRESSURE                 PIC 9(4).
+       01  WS-PRESSURE                 PIC 9(4) VALUE 0.
        01  MIN-PRESS                   PIC 9(4) VALUE 80.
        01  MAX-PRESS                   PIC 9(4) VALUE 120.
 
-       01  WS-HEAT                     PIC 9(4).
+       01  WS-HEAT                     PIC 9(4) VALUE 0.
        01  MIN-HEAT                    PIC 9(4) VALUE 200.
        01  MAX-HEAT                    PIC 9(4) VALUE 300.
 
-       01  WS-VIBRATION                PIC 99V99.
+       01  WS-VIBRATION                PIC 99V99 VALUE 0.00.
        01  MAX-VIBRATION               PIC 99V99 VALUE 20.00.
-       01  WS-VIBRATION-DISP           PIC 99.99.
+       01  WS-VIBRATION-DISP           PIC 99.99 VALUE 0.00.
 
-       01  WS-QUALITY                  PIC 9(3).
+       01  WS-QUALITY                  PIC 9(3) VALUE 0.
        01  QUALITY-THRESH              PIC 9(3) VALUE 70.
 
        *> Stats
@@ -45,30 +68,48 @@ IDENTIFICATION DIVISION.
            05 STAT-FAILED              PIC 9(4) VALUE 0.
 
        *> UI & Time
-       01  WS-TIMESTAMP                PIC X(20).
-       01  WS-DATE                     PIC 9(8).
-       01  WS-TIME                     PIC 9(6).
-       01  WS-SEED                     PIC 9(9).
+       01  WS-TIMESTAMP                PIC X(20) VALUE SPACES.
+       01  WS-DATE                     PIC 9(8) VALUE 0.
+       01  WS-TIME                     PIC 9(6) VALUE 0.
+       01  WS-SEED                     PIC 9(9) VALUE 0.
 
        *> Display Helpers
-       01  WS-FIELD-NAME               PIC X(30).
-       01  WS-STATUS                   PIC X(10).
-       01  WS-VAL-DISP                 PIC X(10).
-       01  WS-ROW                      PIC 9(2).
-       01  WS-COL                      PIC 9(2).
+       01  WS-FIELD-NAME               PIC X(30) VALUE SPACES.
+       01  WS-STATUS                   PIC X(10) VALUE SPACES.
+       01  WS-VAL-DISP                 PIC X(10) VALUE SPACES.
+       01  WS-ROW                      PIC 9(2) VALUE 0.
+
+       *> UI Constants (Rows)
+       78  ROW-INIT                    VALUE 6.
+       78  ROW-PRESS                   VALUE 7.
+       78  ROW-HEAT                    VALUE 8.
+       78  ROW-VIB                     VALUE 9.
+       78  ROW-QUAL                    VALUE 10.
+       78  ROW-MSG                     VALUE 13.
 
        *> ANSI Escape Codes
        01  WS-ESC                      PIC X VALUE X'1B'.
-       01  WS-CSI                      PIC X(2).
-       01  WS-POS-STR                  PIC X(10).
+       01  WS-CSI                      PIC X(2) VALUE SPACES.
 
        PROCEDURE DIVISION.
 
        MAIN-LOGIC.
-           MOVE X'1B5B' TO WS-CSI.
+           MOVE X'1B5B' TO WS-CSI
 
+           *> Open Report File with Error Check
            OPEN OUTPUT REPORT-FILE
+           IF WS-REPORT-STATUS NOT = "00"
+               DISPLAY "FATAL ERROR: Could not open report file. Status: " WS-REPORT-STATUS
+               STOP RUN
+           END-IF
+
+           *> Open Batch File with Error Check
            OPEN INPUT BATCH-FILE
+           IF WS-BATCH-STATUS NOT = "00"
+               DISPLAY "FATAL ERROR: Could not open batch input file. Status: " WS-BATCH-STATUS
+               CLOSE REPORT-FILE
+               STOP RUN
+           END-IF
 
            *> Seed random number generator
            ACCEPT WS-TIME FROM TIME
@@ -82,10 +123,18 @@ IDENTIFICATION DIVISION.
                    AT END
                        MOVE "Y" TO WS-EOF
                    NOT AT END
-                       ADD 1 TO STAT-TOTAL
-                       PERFORM PROCESS-COMPONENT
-                       *> Sleep for visualization (approx 1 sec)
-                       CALL "C$SLEEP" USING 1
+                       IF WS-BATCH-STATUS NOT = "00"
+                            DISPLAY WS-CSI "15;1H" WITH NO ADVANCING
+                            DISPLAY "ERROR: Read failed status " WS-BATCH-STATUS
+                            MOVE "Y" TO WS-EOF
+                       ELSE
+                           IF COMPONENT-ID NOT = SPACES
+                               ADD 1 TO STAT-TOTAL
+                               PERFORM PROCESS-COMPONENT
+                               *> Sleep for visualization (approx 1 sec)
+                               CALL "C$SLEEP" USING 1
+                           END-IF
+                       END-IF
                END-READ
            END-PERFORM
 
@@ -110,18 +159,29 @@ IDENTIFICATION DIVISION.
            *> Initialization
            PERFORM INITIALIZATION
 
-           *> Tests
-           IF WS-FAILED = "N" PERFORM PRESSURE-TEST END-IF
-           IF WS-FAILED = "N" PERFORM HEAT-TREATMENT END-IF
-           IF WS-FAILED = "N" PERFORM VIBRATION-TEST END-IF
-           IF WS-FAILED = "N" PERFORM QUALITY-INSPECTION END-IF
+           *> Tests - strictly sequential with scope terminators
+           IF WS-FAILED = "N"
+               PERFORM PRESSURE-TEST
+           END-IF
+
+           IF WS-FAILED = "N"
+               PERFORM HEAT-TREATMENT
+           END-IF
+
+           IF WS-FAILED = "N"
+               PERFORM VIBRATION-TEST
+           END-IF
+
+           IF WS-FAILED = "N"
+               PERFORM QUALITY-INSPECTION
+           END-IF
 
            *> Final status for this component
            PERFORM UPDATE-OVERALL-STATUS.
 
        INITIALIZATION.
            MOVE "Initialization" TO WS-FIELD-NAME
-           MOVE 6 TO WS-ROW
+           MOVE ROW-INIT TO WS-ROW
            PERFORM GET-TIMESTAMP
            MOVE "PASSED" TO WS-STATUS
            MOVE "   -   " TO WS-VAL-DISP
@@ -130,7 +190,7 @@ IDENTIFICATION DIVISION.
 
        PRESSURE-TEST.
            MOVE "Pressure Test" TO WS-FIELD-NAME
-           MOVE 7 TO WS-ROW
+           MOVE ROW-PRESS TO WS-ROW
            COMPUTE WS-PRESSURE = FUNCTION RANDOM * (MAX-PRESS - MIN-PRESS + 1) + MIN-PRESS
            MOVE WS-PRESSURE TO WS-VAL-DISP
 
@@ -146,7 +206,7 @@ IDENTIFICATION DIVISION.
 
        HEAT-TREATMENT.
            MOVE "Heat Treatment" TO WS-FIELD-NAME
-           MOVE 8 TO WS-ROW
+           MOVE ROW-HEAT TO WS-ROW
            COMPUTE WS-HEAT = FUNCTION RANDOM * (MAX-HEAT - MIN-HEAT + 1) + MIN-HEAT
            MOVE WS-HEAT TO WS-VAL-DISP
 
@@ -162,7 +222,7 @@ IDENTIFICATION DIVISION.
 
        VIBRATION-TEST.
            MOVE "Vibration Test" TO WS-FIELD-NAME
-           MOVE 9 TO WS-ROW
+           MOVE ROW-VIB TO WS-ROW
            *> Generate vibration 0.00 to 30.00
            COMPUTE WS-VIBRATION = FUNCTION RANDOM * 30
            MOVE WS-VIBRATION TO WS-VIBRATION-DISP
@@ -180,7 +240,7 @@ IDENTIFICATION DIVISION.
 
        QUALITY-INSPECTION.
            MOVE "Quality Insp." TO WS-FIELD-NAME
-           MOVE 10 TO WS-ROW
+           MOVE ROW-QUAL TO WS-ROW
            COMPUTE WS-QUALITY = FUNCTION RANDOM * 100
            MOVE WS-QUALITY TO WS-VAL-DISP
 
@@ -201,14 +261,14 @@ IDENTIFICATION DIVISION.
                MOVE "FAILED" TO WS-STATUS
                STRING "| OVERALL: " COMPONENT-ID " FAILED                                            |"
                    INTO REPORT-RECORD
-               DISPLAY WS-CSI "13;1H" WITH NO ADVANCING
+               DISPLAY WS-CSI ROW-MSG ";1H" WITH NO ADVANCING
                DISPLAY REPORT-RECORD WITH NO ADVANCING
            ELSE
                ADD 1 TO STAT-PASSED
                MOVE "PASSED" TO WS-STATUS
                STRING "| OVERALL: " COMPONENT-ID " PASSED                                            |"
                    INTO REPORT-RECORD
-               DISPLAY WS-CSI "13;1H" WITH NO ADVANCING
+               DISPLAY WS-CSI ROW-MSG ";1H" WITH NO ADVANCING
                DISPLAY REPORT-RECORD WITH NO ADVANCING
            END-IF.
 
@@ -235,7 +295,7 @@ IDENTIFICATION DIVISION.
 
        CLEAR-UI-VALUES.
            *> Clear Status, Value, Timestamp columns for rows 6-10
-           PERFORM VARYING WS-ROW FROM 6 BY 1 UNTIL WS-ROW > 10
+           PERFORM VARYING WS-ROW FROM ROW-INIT BY 1 UNTIL WS-ROW > ROW-QUAL
                DISPLAY WS-CSI WS-ROW ";26H" WITH NO ADVANCING
                DISPLAY "           |            |                              |" WITH NO ADVANCING
            END-PERFORM.
@@ -262,9 +322,15 @@ IDENTIFICATION DIVISION.
 
        LOG-RESULT.
            MOVE SPACES TO REPORT-RECORD
-           STRING COMPONENT-ID ";" WS-FIELD-NAME ";" WS-STATUS ";" WS-VAL-DISP ";" WS-TIMESTAMP
-                  DELIMITED BY SIZE INTO REPORT-RECORD
-           WRITE REPORT-RECORD.
+           IF WS-REPORT-STATUS = "00"
+               STRING COMPONENT-ID ";" WS-FIELD-NAME ";" WS-STATUS ";" WS-VAL-DISP ";" WS-TIMESTAMP
+                      DELIMITED BY SIZE INTO REPORT-RECORD
+               WRITE REPORT-RECORD
+               IF WS-REPORT-STATUS NOT = "00"
+                   DISPLAY WS-CSI "15;1H" WITH NO ADVANCING
+                   DISPLAY "ERROR: Write failed status " WS-REPORT-STATUS
+               END-IF
+           END-IF.
 
        DISPLAY-SUMMARY.
            DISPLAY WS-CSI "15;1H" WITH NO ADVANCING
