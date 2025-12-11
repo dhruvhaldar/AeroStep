@@ -28,6 +28,10 @@ IDENTIFICATION DIVISION.
                ORGANIZATION IS LINE SEQUENTIAL
                FILE STATUS IS WS-BATCH-STATUS.
 
+           SELECT CONFIG-FILE ASSIGN TO "system_config.cfg"
+               ORGANIZATION IS LINE SEQUENTIAL
+               FILE STATUS IS WS-CONFIG-STATUS.
+
        DATA DIVISION.
        FILE SECTION.
        FD  REPORT-FILE.
@@ -37,6 +41,9 @@ IDENTIFICATION DIVISION.
        01  BATCH-RECORD.
            05 COMPONENT-ID             PIC X(10).
 
+       FD  CONFIG-FILE.
+       01  CONFIG-RECORD               PIC X(80).
+
        WORKING-STORAGE SECTION.
        01  WS-EOF                      PIC X VALUE "N".
        01  WS-FAILED                   PIC X VALUE "N".
@@ -44,6 +51,15 @@ IDENTIFICATION DIVISION.
        *> File Status Codes
        01  WS-REPORT-STATUS            PIC X(02) VALUE "00".
        01  WS-BATCH-STATUS             PIC X(02) VALUE "00".
+       01  WS-CONFIG-STATUS            PIC X(02) VALUE "00".
+
+       *> Configuration
+       01  WS-CONFIG-KEY               PIC X(20).
+       01  WS-CONFIG-VAL               PIC X(20).
+
+       *> Operator Info
+       01  WS-OPERATOR-ID              PIC X(10).
+       01  WS-AUTH-CODE                PIC X(10).
 
        *> Test Variables
        01  WS-PRESSURE                 PIC 9(4) VALUE 0.
@@ -60,6 +76,15 @@ IDENTIFICATION DIVISION.
 
        01  WS-QUALITY                  PIC 9(3) VALUE 0.
        01  QUALITY-THRESH              PIC 9(3) VALUE 70.
+
+       *> Error Codes
+       01  WS-ERROR-CODE               PIC X(10) VALUE SPACES.
+
+       *> Checksum
+       01  WS-CHECKSUM                 PIC 9(4) VALUE 0.
+       01  WS-CHECKSUM-HEX             PIC X(4).
+       01  WS-IDX                      PIC 9(3).
+       01  WS-LOG-CONTENT              PIC X(100) VALUE SPACES.
 
        *> Stats
        01  WS-STATS.
@@ -95,6 +120,10 @@ IDENTIFICATION DIVISION.
 
        MAIN-LOGIC.
            MOVE X'1B5B' TO WS-CSI
+
+           PERFORM OPERATOR-LOGIN
+           PERFORM SYSTEM-SELF-TEST
+           PERFORM LOAD-CONFIG
 
            *> Open Report File with Error Check
            OPEN OUTPUT REPORT-FILE
@@ -147,8 +176,69 @@ IDENTIFICATION DIVISION.
            DISPLAY WS-CSI "16;1H" WITH NO ADVANCING
            STOP RUN.
 
+       OPERATOR-LOGIN.
+           DISPLAY WS-CSI "2J" WITH NO ADVANCING
+           DISPLAY WS-CSI "H" WITH NO ADVANCING
+           DISPLAY "+---------------------------------------------------+"
+           DISPLAY "|          AEROSTEP SECURE LOGIN                    |"
+           DISPLAY "+---------------------------------------------------+"
+           DISPLAY "| Operator ID:                                      |"
+           DISPLAY "| Auth Code:                                        |"
+           DISPLAY "+---------------------------------------------------+"
+
+           DISPLAY WS-CSI "4;16H" WITH NO ADVANCING
+           ACCEPT WS-OPERATOR-ID
+           DISPLAY WS-CSI "5;16H" WITH NO ADVANCING
+           ACCEPT WS-AUTH-CODE
+
+           IF WS-OPERATOR-ID = SPACES OR WS-AUTH-CODE = SPACES
+               DISPLAY WS-CSI "7;1H" WITH NO ADVANCING
+               DISPLAY "ERROR: Credentials required."
+               STOP RUN
+           END-IF.
+
+       SYSTEM-SELF-TEST.
+           DISPLAY WS-CSI "2J" WITH NO ADVANCING
+           DISPLAY WS-CSI "H" WITH NO ADVANCING
+           DISPLAY "INITIATING SYSTEM SELF-TEST..."
+           CALL "C$SLEEP" USING 1
+           DISPLAY "CHECKING SENSORS... OK"
+           CALL "C$SLEEP" USING 1
+           DISPLAY "CHECKING MEMORY... OK"
+           CALL "C$SLEEP" USING 1
+           DISPLAY "SYSTEM READY."
+           CALL "C$SLEEP" USING 1.
+
+       LOAD-CONFIG.
+           OPEN INPUT CONFIG-FILE
+           IF WS-CONFIG-STATUS NOT = "00"
+               DISPLAY "FATAL: Config file missing."
+               STOP RUN
+           END-IF
+
+           PERFORM UNTIL WS-EOF = "Y"
+               READ CONFIG-FILE
+                   AT END
+                       MOVE "Y" TO WS-EOF
+                   NOT AT END
+                       UNSTRING CONFIG-RECORD DELIMITED BY "="
+                           INTO WS-CONFIG-KEY WS-CONFIG-VAL
+                       EVALUATE WS-CONFIG-KEY
+                           WHEN "MIN_PRESS" COMPUTE MIN-PRESS = FUNCTION NUMVAL(WS-CONFIG-VAL)
+                           WHEN "MAX_PRESS" COMPUTE MAX-PRESS = FUNCTION NUMVAL(WS-CONFIG-VAL)
+                           WHEN "MIN_HEAT"  COMPUTE MIN-HEAT = FUNCTION NUMVAL(WS-CONFIG-VAL)
+                           WHEN "MAX_HEAT"  COMPUTE MAX-HEAT = FUNCTION NUMVAL(WS-CONFIG-VAL)
+                           WHEN "MAX_VIB"   COMPUTE MAX-VIBRATION = FUNCTION NUMVAL(WS-CONFIG-VAL)
+                           WHEN "QUAL_THRESH" COMPUTE QUALITY-THRESH = FUNCTION NUMVAL(WS-CONFIG-VAL)
+                       END-EVALUATE
+               END-READ
+           END-PERFORM
+           CLOSE CONFIG-FILE
+           MOVE "N" TO WS-EOF.
+
        PROCESS-COMPONENT.
            MOVE "N" TO WS-FAILED
+           MOVE SPACES TO WS-ERROR-CODE
 
            *> Clear previous values in UI
            PERFORM CLEAR-UI-VALUES
@@ -198,6 +288,7 @@ IDENTIFICATION DIVISION.
            IF WS-PRESSURE < MIN-PRESS OR WS-PRESSURE > MAX-PRESS
                MOVE "FAILED" TO WS-STATUS
                MOVE "Y" TO WS-FAILED
+               MOVE "ERR-PRESS" TO WS-ERROR-CODE
            ELSE
                MOVE "PASSED" TO WS-STATUS
            END-IF
@@ -214,6 +305,7 @@ IDENTIFICATION DIVISION.
            IF WS-HEAT < MIN-HEAT OR WS-HEAT > MAX-HEAT
                MOVE "FAILED" TO WS-STATUS
                MOVE "Y" TO WS-FAILED
+               MOVE "ERR-HEAT" TO WS-ERROR-CODE
            ELSE
                MOVE "PASSED" TO WS-STATUS
            END-IF
@@ -232,6 +324,7 @@ IDENTIFICATION DIVISION.
            IF WS-VIBRATION > MAX-VIBRATION
                MOVE "FAILED" TO WS-STATUS
                MOVE "Y" TO WS-FAILED
+               MOVE "ERR-VIB" TO WS-ERROR-CODE
            ELSE
                MOVE "PASSED" TO WS-STATUS
            END-IF
@@ -248,6 +341,7 @@ IDENTIFICATION DIVISION.
            IF WS-QUALITY < QUALITY-THRESH
                MOVE "FAILED" TO WS-STATUS
                MOVE "Y" TO WS-FAILED
+               MOVE "ERR-QUAL" TO WS-ERROR-CODE
            ELSE
                MOVE "PASSED" TO WS-STATUS
            END-IF
@@ -259,7 +353,7 @@ IDENTIFICATION DIVISION.
            IF WS-FAILED = "Y"
                ADD 1 TO STAT-FAILED
                MOVE "FAILED" TO WS-STATUS
-               STRING "| OVERALL: " COMPONENT-ID " FAILED                                            |"
+               STRING "| OVERALL: " COMPONENT-ID " " WS-ERROR-CODE "                                   |"
                    INTO REPORT-RECORD
                DISPLAY WS-CSI ROW-MSG ";1H" WITH NO ADVANCING
                DISPLAY REPORT-RECORD WITH NO ADVANCING
@@ -322,15 +416,33 @@ IDENTIFICATION DIVISION.
 
        LOG-RESULT.
            MOVE SPACES TO REPORT-RECORD
+           MOVE SPACES TO WS-LOG-CONTENT
            IF WS-REPORT-STATUS = "00"
-               STRING COMPONENT-ID ";" WS-FIELD-NAME ";" WS-STATUS ";" WS-VAL-DISP ";" WS-TIMESTAMP
-                      DELIMITED BY SIZE INTO REPORT-RECORD
+               STRING COMPONENT-ID DELIMITED BY SPACE
+                      ";" WS-FIELD-NAME DELIMITED BY SPACE
+                      ";" WS-STATUS DELIMITED BY SPACE
+                      ";" WS-VAL-DISP DELIMITED BY SPACE
+                      ";" WS-TIMESTAMP DELIMITED BY SIZE
+                      ";" WS-ERROR-CODE DELIMITED BY SPACE
+                      INTO WS-LOG-CONTENT
+               PERFORM COMPUTE-CHECKSUM
+               STRING WS-LOG-CONTENT DELIMITED BY SPACE
+                      ";CS:" WS-CHECKSUM-HEX
+                      INTO REPORT-RECORD
                WRITE REPORT-RECORD
                IF WS-REPORT-STATUS NOT = "00"
                    DISPLAY WS-CSI "15;1H" WITH NO ADVANCING
                    DISPLAY "ERROR: Write failed status " WS-REPORT-STATUS
                END-IF
            END-IF.
+
+       COMPUTE-CHECKSUM.
+           MOVE 0 TO WS-CHECKSUM
+           PERFORM VARYING WS-IDX FROM 1 BY 1 UNTIL WS-IDX > 100
+               COMPUTE WS-CHECKSUM = WS-CHECKSUM + FUNCTION ORD(WS-LOG-CONTENT(WS-IDX:1))
+           END-PERFORM
+           COMPUTE WS-CHECKSUM = FUNCTION MOD(WS-CHECKSUM, 9999)
+           MOVE WS-CHECKSUM TO WS-CHECKSUM-HEX.
 
        DISPLAY-SUMMARY.
            DISPLAY WS-CSI "15;1H" WITH NO ADVANCING

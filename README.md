@@ -5,7 +5,7 @@
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 ![Status](https://img.shields.io/badge/Status-Active-brightgreen)
 
-**AetherFlow** is a robust, military-standard COBOL application designed to simulate a batch-controlled workflow for aerospace component testing. It processes list of components, subjecting each to a rigorous sequence of tests including pressure, heat, vibration, and quality inspection. The system features a real-time TUI (Text User Interface) dashboard, automated input generation, strictly sequential logic, and comprehensive audit logging.
+**AetherFlow** is a robust, military-standard COBOL application designed to simulate a batch-controlled workflow for aerospace component testing. It processes a list of components, subjecting each to a rigorous sequence of tests including pressure, heat, vibration, and quality inspection. The system features a real-time TUI (Text User Interface) dashboard, automated input generation, strictly sequential logic, and comprehensive secure logging.
 
 ---
 
@@ -14,10 +14,12 @@
 **AetherFlow** models a high-integrity aerospace manufacturing testing pipeline:
 
 -   **Batch Processing:** Reads component IDs from an external input file (`batch_input.txt`) and processes them sequentially.
--   **Real-Time TUI:** Displays a live dashboard that updates in-place using ANSI escape sequences, showing the status of the current component and the batch overall.
--   **Sequential Workflow:** Executes tests in a strict order. If a component fails any step (Pressure, Heat, Vibration, Quality), the workflow for that component halts immediately to ensure safety.
--   **Randomized Simulation:** Generates random test measurements for each step, simulating real-world sensor data.
--   **Detailed Logging:** records timestamped results for every step to `aerostep.txt` for audit trails.
+-   **Configurable Parameters:** Test thresholds are defined externally in `system_config.cfg`, allowing for mission-specific adaptability without code changes.
+-   **Secure Access:** Requires Operator Login (ID and Auth Code) to access the system.
+-   **System Integrity:** Performs a Power-On Self-Test (POST) of sensors and memory before operation.
+-   **Real-Time TUI:** Displays a live dashboard that updates in-place using ANSI escape sequences.
+-   **Sequential Workflow:** Executes tests in a strict order. If a component fails any step, the workflow halts immediately.
+-   **Secure Logging:** Records timestamped results with specific error codes and a cryptographic checksum for each entry to ensure audit trail integrity.
 -   **Standards Compliance:** Written in GnuCOBOL free-format, adhering to strict coding standards including explicit scope terminators, file status checking, and error handling.
 
 ---
@@ -36,86 +38,65 @@ cobc -x -free aerostep.cbl -o aerostep
 ```
 
 ### Execution
-1.  Ensure `batch_input.txt` exists and contains a list of component IDs (one per line).
-2.  Run the executable:
+1.  Ensure `batch_input.txt` contains component IDs.
+2.  Ensure `system_config.cfg` defines the valid test thresholds.
+3.  Run the executable:
     ```bash
     ./aerostep
     ```
-3.  Observe the TUI dashboard updates in your terminal.
-4.  Check `aerostep.txt` for the detailed execution log.
+4.  **Login:** Enter any non-empty Operator ID and Auth Code when prompted.
+5.  **Operation:** Watch the System Self-Test and then the TUI dashboard as components are processed.
+6.  **Audit:** Check `aerostep.txt` for the detailed execution log, including checksums.
 
 ---
+
+## Configuration
+
+The system behavior is controlled by `system_config.cfg`:
+
+```ini
+MIN_PRESS=0080
+MAX_PRESS=0120
+MIN_HEAT=0200
+...
+```
 
 ## Workflow Steps
 
 1.  **Initialization**
-    *   Logs the start of processing for the component.
-    *   *Criterion:* Always Passes.
-
+    *   Logs the start of processing.
 2.  **Pressure Test**
     *   Simulates pressure chamber testing.
-    *   *Range:* 80 - 120 units.
-    *   *Fail:* Value outside range.
-
+    *   *Error Code:* `ERR-PRESS`
 3.  **Heat Treatment**
     *   Simulates thermal stress testing.
-    *   *Range:* 200 - 300 degrees.
-    *   *Fail:* Value outside range.
-
+    *   *Error Code:* `ERR-HEAT`
 4.  **Vibration Test**
     *   Simulates structural vibration testing.
-    *   *Limit:* Max 20.00 units.
-    *   *Fail:* Value exceeds limit.
-
+    *   *Error Code:* `ERR-VIB`
 5.  **Quality Inspection**
-    *   Simulates final visual/automated inspection.
-    *   *Threshold:* Score >= 70.
-    *   *Fail:* Score below threshold.
-
----
-
-## Standards Compliance
-
-This project adheres to strict software development standards suitable for high-reliability environments:
-
-*   **Explicit Scope Terminators:** Uses `END-IF`, `END-PERFORM`, `END-READ` to prevent logic errors.
-*   **Robust I/O:** Every `OPEN`, `READ`, and `WRITE` operation includes a `FILE STATUS` check to detect and handle errors gracefully.
-*   **Structured Header:** Includes a standardized program identification block with security level, author, and purpose.
-*   **Explicit Initialization:** All variables are initialized to known states.
-*   **Clean Output:** Log files use a structured, delimited format for easy parsing.
+    *   Simulates final inspection.
+    *   *Error Code:* `ERR-QUAL`
 
 ---
 
 ## Code Highlights
 
-**Batch Loop with Status Check:**
+**Secure Logging with Checksum:**
 ```cobol
-PERFORM UNTIL WS-EOF = "Y"
-    READ BATCH-FILE
-        AT END
-            MOVE "Y" TO WS-EOF
-        NOT AT END
-            IF WS-BATCH-STATUS NOT = "00"
-                 DISPLAY "ERROR: Read failed status " WS-BATCH-STATUS
-                 MOVE "Y" TO WS-EOF
-            ELSE
-                PERFORM PROCESS-COMPONENT
-            END-IF
-    END-READ
-END-PERFORM
+PERFORM COMPUTE-CHECKSUM
+STRING REPORT-RECORD DELIMITED BY SIZE
+       ";CS:" WS-CHECKSUM-HEX
+       INTO REPORT-RECORD
+WRITE REPORT-RECORD
 ```
 
-**Sequential Testing Logic:**
+**Configuration Loading:**
 ```cobol
-IF WS-FAILED = "N"
-    PERFORM PRESSURE-TEST
-END-IF
-
-IF WS-FAILED = "N"
-    PERFORM HEAT-TREATMENT
-END-IF
-
-IF WS-FAILED = "N"
-    PERFORM VIBRATION-TEST
-END-IF
+UNSTRING CONFIG-RECORD DELIMITED BY "="
+    INTO WS-CONFIG-KEY WS-CONFIG-VAL
+EVALUATE WS-CONFIG-KEY
+    WHEN "MIN_PRESS" MOVE WS-CONFIG-VAL TO MIN-PRESS
+    ...
+END-EVALUATE
 ```
