@@ -1,11 +1,12 @@
-IDENTIFICATION DIVISION.
+       IDENTIFICATION DIVISION.
        PROGRAM-ID. AEROSTEP-UI.
 
        ENVIRONMENT DIVISION.
        INPUT-OUTPUT SECTION.
        FILE-CONTROL.
            SELECT REPORT-FILE ASSIGN TO "aerostep.txt"
-               ORGANIZATION IS LINE SEQUENTIAL.
+               ORGANIZATION IS LINE SEQUENTIAL
+               FILE STATUS IS WS-FILE-STATUS.
 
        DATA DIVISION.
        FILE SECTION.
@@ -13,7 +14,15 @@ IDENTIFICATION DIVISION.
        01  REPORT-RECORD               PIC X(80).
 
        WORKING-STORAGE SECTION.
+       01 WS-FILE-STATUS              PIC XX.
        01 WS-FAILED                   PIC X VALUE "N".
+
+       *> Login Variables
+       01 WS-OPERATOR-ID              PIC X(20).
+       01 WS-ACCESS-CODE              PIC X(20).
+       01 WS-EXPECTED-CODE            PIC X(20).
+       01 WS-ENV-CODE                 PIC X(20).
+
        01 WS-PRESSURE                 PIC 9(4).
        01 MIN-PRESS                  PIC 9(4) VALUE 80.
        01 MAX-PRESS                  PIC 9(4) VALUE 120.
@@ -39,7 +48,14 @@ IDENTIFICATION DIVISION.
        PROCEDURE DIVISION.
 
        MAIN-LOGIC.
+           PERFORM LOGIN-SEQUENCE
+
            OPEN OUTPUT REPORT-FILE
+           IF WS-FILE-STATUS NOT = "00"
+               DISPLAY "CRITICAL ERROR: CANNOT OPEN LOG FILE. STATUS: " WS-FILE-STATUS
+               STOP RUN
+           END-IF
+
            PERFORM DRAW-UI-SHELL
 
            PERFORM INITIALIZATION
@@ -56,7 +72,45 @@ IDENTIFICATION DIVISION.
            PERFORM FINALIZE
 
            CLOSE REPORT-FILE
+           IF WS-FILE-STATUS NOT = "00"
+               DISPLAY "WARNING: ERROR CLOSING LOG FILE. STATUS: " WS-FILE-STATUS
+           END-IF
            STOP RUN.
+
+       LOGIN-SEQUENCE.
+           PERFORM CLEAR-SCREEN
+           DISPLAY "+------------------------------------------------------------------------------+"
+           DISPLAY "|                        SECURITY ACCESS CONTROL                               |"
+           DISPLAY "+------------------------------------------------------------------------------+"
+           DISPLAY " "
+           DISPLAY "   OPERATOR IDENTIFICATION REQUIRED"
+           DISPLAY " "
+           DISPLAY "   OPERATOR ID: " WITH NO ADVANCING
+           ACCEPT WS-OPERATOR-ID
+           DISPLAY " "
+           DISPLAY "   ACCESS CODE: " WITH NO ADVANCING
+           *> Use ANSI Hidden attribute to mask input
+           DISPLAY WS-ESC "[8m" WITH NO ADVANCING
+           ACCEPT WS-ACCESS-CODE
+           DISPLAY WS-ESC "[0m"
+           DISPLAY " "
+
+           ACCEPT WS-ENV-CODE FROM ENVIRONMENT "AERO_PASS"
+           IF WS-ENV-CODE = SPACES THEN
+               DISPLAY "CRITICAL SECURITY ERROR: SECURITY CONFIGURATION MISSING."
+               DISPLAY "SYSTEM HALTED."
+               STOP RUN
+           ELSE
+               MOVE WS-ENV-CODE TO WS-EXPECTED-CODE
+           END-IF
+
+           IF WS-ACCESS-CODE = WS-EXPECTED-CODE THEN
+               DISPLAY "   ACCESS GRANTED."
+               CALL "C$SLEEP" USING 1
+           ELSE
+               DISPLAY "   ACCESS DENIED."
+               STOP RUN
+           END-IF.
        
        CLEAR-SCREEN.
            *> Clear screen using ANSI escape sequence (GnuCOBOL compatible)
@@ -163,7 +217,6 @@ IDENTIFICATION DIVISION.
        GET-TIMESTAMP.
        ACCEPT WS-DATE FROM DATE YYYYMMDD
        ACCEPT WS-TIME FROM TIME
-       DISPLAY "WS-TIME = " WS-TIME
        STRING WS-DATE(1:4) "/" WS-DATE(5:2) "/" WS-DATE(7:2) " "
                WS-TIME(1:2) ":" WS-TIME(3:2) ":" WS-TIME(5:2)
            DELIMITED BY SIZE INTO WS-BASE-TIMESTAMP.
