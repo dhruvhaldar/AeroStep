@@ -106,7 +106,7 @@
 
            IF WS-ACCESS-CODE = WS-EXPECTED-CODE THEN
                DISPLAY "   ACCESS GRANTED."
-               CALL "C$SLEEP" USING 1
+               *> Bolt: Removed intentional delay for performance optimization
            ELSE
                DISPLAY "   ACCESS DENIED."
                STOP RUN
