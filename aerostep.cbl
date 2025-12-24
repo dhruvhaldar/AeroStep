@@ -105,10 +105,16 @@
            END-IF
 
            IF WS-ACCESS-CODE = WS-EXPECTED-CODE THEN
-               DISPLAY "   ACCESS GRANTED."
+               DISPLAY "   " WITH NO ADVANCING
+               DISPLAY WS-ESC "[32m" WITH NO ADVANCING
+               DISPLAY "ACCESS GRANTED." WITH NO ADVANCING
+               DISPLAY WS-ESC "[0m"
                CALL "C$SLEEP" USING 1
            ELSE
-               DISPLAY "   ACCESS DENIED."
+               DISPLAY "   " WITH NO ADVANCING
+               DISPLAY WS-ESC "[31m" WITH NO ADVANCING
+               DISPLAY "ACCESS DENIED." WITH NO ADVANCING
+               DISPLAY WS-ESC "[0m"
                STOP RUN
            END-IF.
        
@@ -154,7 +160,13 @@
 
                *> Position and print Status (Col 26)
                DISPLAY WS-ESC "[" UI-LINE ";26H" WITH NO ADVANCING
+               IF WS-STATUS(1:6) = "FAILED"
+                   DISPLAY WS-ESC "[31m" WITH NO ADVANCING
+               ELSE
+                   DISPLAY WS-ESC "[32m" WITH NO ADVANCING
+               END-IF
                DISPLAY WS-STATUS WITH NO ADVANCING
+               DISPLAY WS-ESC "[0m" WITH NO ADVANCING
 
                *> Position and print Value (Col 38)
                DISPLAY WS-ESC "[" UI-LINE ";38H" WITH NO ADVANCING
@@ -218,10 +230,13 @@
            *> Position cursor to Overall Status line (Line 11), after label (Col 19)
            DISPLAY WS-ESC "[11;19H" WITH NO ADVANCING
            IF WS-FAILED = "Y"
+               DISPLAY WS-ESC "[31m" WITH NO ADVANCING
                DISPLAY "PROCESS FAILED                                " WITH NO ADVANCING
            ELSE
+               DISPLAY WS-ESC "[32m" WITH NO ADVANCING
                DISPLAY "PROCESS COMPLETED SUCCESSFULLY                " WITH NO ADVANCING
            END-IF
+           DISPLAY WS-ESC "[0m" WITH NO ADVANCING
            *> Move cursor below table (Line 13) to exit cleanly
            DISPLAY WS-ESC "[13;1H".
 
