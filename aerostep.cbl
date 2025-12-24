@@ -11,7 +11,7 @@
        DATA DIVISION.
        FILE SECTION.
        FD  REPORT-FILE.
-       01  REPORT-RECORD               PIC X(80).
+       01  REPORT-RECORD               PIC X(120).
 
        WORKING-STORAGE SECTION.
        01 WS-FILE-STATUS              PIC XX.
@@ -87,6 +87,7 @@
            DISPLAY " "
            DISPLAY "   OPERATOR ID: " WITH NO ADVANCING
            ACCEPT WS-OPERATOR-ID
+           PERFORM SANITIZE-INPUT
            DISPLAY " "
            DISPLAY "   ACCESS CODE: " WITH NO ADVANCING
            *> Use ANSI Hidden attribute to mask input
@@ -151,6 +152,7 @@
                INTO WS-TIMESTAMP
 
            DISPLAY WS-TIMESTAMP
+           PERFORM WRITE-LOG-ENTRY
            .
 
        INITIALIZATION.
@@ -220,5 +222,19 @@
        STRING WS-DATE(1:4) "/" WS-DATE(5:2) "/" WS-DATE(7:2) " "
                WS-TIME(1:2) ":" WS-TIME(3:2) ":" WS-TIME(5:2)
            DELIMITED BY SIZE INTO WS-BASE-TIMESTAMP.
+
+       SANITIZE-INPUT.
+           INSPECT WS-OPERATOR-ID REPLACING ALL WS-ESC BY "?".
+
+       WRITE-LOG-ENTRY.
+           MOVE SPACES TO REPORT-RECORD
+           STRING
+               WS-BASE-TIMESTAMP DELIMITED BY SIZE
+               " | OP:" WS-OPERATOR-ID DELIMITED BY SIZE
+               " | " WS-FIELD-NAME DELIMITED BY SIZE
+               " | " WS-STATUS DELIMITED BY SIZE
+               " | Val:" WS-FIELD-VALUE-DISPLAY DELIMITED BY SIZE
+               INTO REPORT-RECORD
+           WRITE REPORT-RECORD.
 
        END PROGRAM AEROSTEP-UI.
