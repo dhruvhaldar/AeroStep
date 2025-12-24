@@ -106,7 +106,6 @@
 
            IF WS-ACCESS-CODE = WS-EXPECTED-CODE THEN
                DISPLAY "   ACCESS GRANTED."
-               CALL "C$SLEEP" USING 1
            ELSE
                DISPLAY "   ACCESS DENIED."
                STOP RUN
