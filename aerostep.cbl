@@ -40,7 +40,7 @@
        01 WS-DATE                   PIC 9(8).
        01 WS-TIME                   PIC 9(6).
 
-       01 UI-LINE                   PIC 9(2).
+       01 UI-LINE                   PIC 9(2) VALUE 0.
 
        01 WS-STATUS                 PIC X(10).
        01 WS-ESC                    PIC X VALUE X'1B'.
@@ -133,32 +133,43 @@
            DISPLAY "+------------------------------------------------------------------------------+".
 
        UPDATE-UI-ROW.
-           IF WS-FIELD-NAME = "Initialization"
-               MOVE 6 TO UI-LINE
-           ELSE IF WS-FIELD-NAME = "Pressure Test"
-               MOVE 7 TO UI-LINE
-           ELSE IF WS-FIELD-NAME = "Heat Treatment"
-               MOVE 8 TO UI-LINE
-           ELSE IF WS-FIELD-NAME = "Quality Inspection"
-               MOVE 9 TO UI-LINE
+           MOVE 0 TO UI-LINE
+
+           *> Debugging with EVALUATE
+           EVALUATE WS-FIELD-NAME
+               WHEN "Initialization"
+                   MOVE 6 TO UI-LINE
+               WHEN "Pressure Test"
+                   MOVE 7 TO UI-LINE
+               WHEN "Heat Treatment"
+                   MOVE 8 TO UI-LINE
+               WHEN "Quality Inspection"
+                   MOVE 9 TO UI-LINE
+           END-EVALUATE
+
+           IF UI-LINE > 0
+               *> Position and print Step Name (Col 3)
+               DISPLAY WS-ESC "[" UI-LINE ";3H" WITH NO ADVANCING
+               DISPLAY WS-FIELD-NAME(1:20) WITH NO ADVANCING
+
+               *> Position and print Status (Col 26)
+               DISPLAY WS-ESC "[" UI-LINE ";26H" WITH NO ADVANCING
+               DISPLAY WS-STATUS WITH NO ADVANCING
+
+               *> Position and print Value (Col 38)
+               DISPLAY WS-ESC "[" UI-LINE ";38H" WITH NO ADVANCING
+               DISPLAY WS-FIELD-VALUE-DISPLAY WITH NO ADVANCING
+
+               *> Position and print Timestamp (Col 48)
+               DISPLAY WS-ESC "[" UI-LINE ";48H" WITH NO ADVANCING
+               DISPLAY WS-BASE-TIMESTAMP WITH NO ADVANCING
            END-IF
-
-           STRING
-               WS-FIELD-NAME DELIMITED BY SIZE
-               " | " WS-STATUS DELIMITED BY SIZE
-               " | " WS-FIELD-VALUE-DISPLAY DELIMITED BY SIZE
-               " | " WS-BASE-TIMESTAMP DELIMITED BY SIZE
-               INTO WS-TIMESTAMP
-
-           DISPLAY WS-TIMESTAMP
            .
 
        INITIALIZATION.
            MOVE "Initialization" TO WS-FIELD-NAME
            PERFORM GET-TIMESTAMP
            MOVE WS-BASE-TIMESTAMP TO WS-TIMESTAMP
-           DISPLAY WS-TIMESTAMP
-           DISPLAY " - Initialization started"
            MOVE SPACES TO WS-FIELD-VALUE-DISPLAY
            MOVE "PASSED" TO WS-STATUS
            PERFORM UPDATE-UI-ROW.
@@ -204,15 +215,15 @@
 
        FINALIZE.
            PERFORM GET-TIMESTAMP
+           *> Position cursor to Overall Status line (Line 11), after label (Col 19)
+           DISPLAY WS-ESC "[11;19H" WITH NO ADVANCING
            IF WS-FAILED = "Y"
-               DISPLAY "+------------------------------------------------------------------------------+"
-               DISPLAY "| OVERALL STATUS: PROCESS FAILED                                              |"
-               DISPLAY "+------------------------------------------------------------------------------+"
+               DISPLAY "PROCESS FAILED                                " WITH NO ADVANCING
            ELSE
-               DISPLAY "+------------------------------------------------------------------------------+"
-               DISPLAY "| OVERALL STATUS: PROCESS COMPLETED SUCCESSFULLY                              |"
-               DISPLAY "+------------------------------------------------------------------------------+"
-           END-IF.
+               DISPLAY "PROCESS COMPLETED SUCCESSFULLY                " WITH NO ADVANCING
+           END-IF
+           *> Move cursor below table (Line 13) to exit cleanly
+           DISPLAY WS-ESC "[13;1H".
 
        GET-TIMESTAMP.
        ACCEPT WS-DATE FROM DATE YYYYMMDD
