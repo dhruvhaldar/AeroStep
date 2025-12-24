@@ -4,7 +4,7 @@
        ENVIRONMENT DIVISION.
        INPUT-OUTPUT SECTION.
        FILE-CONTROL.
-           SELECT REPORT-FILE ASSIGN TO "aerostep.txt"
+           SELECT OPTIONAL REPORT-FILE ASSIGN TO "aerostep.txt"
                ORGANIZATION IS LINE SEQUENTIAL
                FILE STATUS IS WS-FILE-STATUS.
 
@@ -34,6 +34,7 @@
 
        01 WS-TIMESTAMP               PIC X(80).
        01 WS-BASE-TIMESTAMP          PIC X(20).
+       01 WS-LOG-MESSAGE             PIC X(39).
        01 WS-FIELD-NAME              PIC X(30).
        01 WS-FIELD-VALUE             PIC 9(4).
        01 WS-FIELD-VALUE-DISPLAY    PIC X(4).
@@ -48,14 +49,13 @@
        PROCEDURE DIVISION.
 
        MAIN-LOGIC.
-           PERFORM LOGIN-SEQUENCE
-
-           OPEN OUTPUT REPORT-FILE
+           OPEN EXTEND REPORT-FILE
            IF WS-FILE-STATUS NOT = "00"
                DISPLAY "CRITICAL ERROR: CANNOT OPEN LOG FILE. STATUS: " WS-FILE-STATUS
                STOP RUN
            END-IF
 
+           PERFORM LOGIN-SEQUENCE
            PERFORM DRAW-UI-SHELL
 
            PERFORM INITIALIZATION
@@ -105,10 +105,15 @@
            END-IF
 
            IF WS-ACCESS-CODE = WS-EXPECTED-CODE THEN
+               MOVE "LOGIN SUCCESSFUL" TO WS-LOG-MESSAGE
+               PERFORM WRITE-LOG-ENTRY
                DISPLAY "   ACCESS GRANTED."
                CALL "C$SLEEP" USING 1
            ELSE
+               MOVE "LOGIN FAILED - ACCESS DENIED" TO WS-LOG-MESSAGE
+               PERFORM WRITE-LOG-ENTRY
                DISPLAY "   ACCESS DENIED."
+               CLOSE REPORT-FILE
                STOP RUN
            END-IF.
        
@@ -218,12 +223,24 @@
            *> Position cursor to Overall Status line (Line 11), after label (Col 19)
            DISPLAY WS-ESC "[11;19H" WITH NO ADVANCING
            IF WS-FAILED = "Y"
+               MOVE "PROCESS FAILED" TO WS-LOG-MESSAGE
                DISPLAY "PROCESS FAILED                                " WITH NO ADVANCING
            ELSE
+               MOVE "PROCESS COMPLETED SUCCESSFULLY" TO WS-LOG-MESSAGE
                DISPLAY "PROCESS COMPLETED SUCCESSFULLY                " WITH NO ADVANCING
            END-IF
+           PERFORM WRITE-LOG-ENTRY
            *> Move cursor below table (Line 13) to exit cleanly
            DISPLAY WS-ESC "[13;1H".
+
+       WRITE-LOG-ENTRY.
+           PERFORM GET-TIMESTAMP
+           MOVE WS-BASE-TIMESTAMP TO REPORT-RECORD(1:19)
+           MOVE " " TO REPORT-RECORD(20:1)
+           MOVE WS-OPERATOR-ID TO REPORT-RECORD(21:20)
+           MOVE " " TO REPORT-RECORD(41:1)
+           MOVE WS-LOG-MESSAGE TO REPORT-RECORD(42:39)
+           WRITE REPORT-RECORD.
 
        GET-TIMESTAMP.
        ACCEPT WS-DATE FROM DATE YYYYMMDD
