@@ -11,7 +11,7 @@
        DATA DIVISION.
        FILE SECTION.
        FD  REPORT-FILE.
-       01  REPORT-RECORD               PIC X(80).
+       01  REPORT-RECORD               PIC X(120).
 
        WORKING-STORAGE SECTION.
        01 WS-FILE-STATUS              PIC XX.
@@ -87,6 +87,9 @@
            DISPLAY " "
            DISPLAY "   OPERATOR ID: " WITH NO ADVANCING
            ACCEPT WS-OPERATOR-ID
+           *> Sanitize input to prevent log injection
+           INSPECT WS-OPERATOR-ID REPLACING ALL WS-ESC BY SPACE
+           INSPECT WS-OPERATOR-ID REPLACING ALL "," BY SPACE
            DISPLAY " "
            DISPLAY "   ACCESS CODE: " WITH NO ADVANCING
            *> Use ANSI Hidden attribute to mask input
@@ -175,8 +178,25 @@
                *> Position and print Timestamp (Col 48)
                DISPLAY WS-ESC "[" UI-LINE ";48H" WITH NO ADVANCING
                DISPLAY WS-BASE-TIMESTAMP WITH NO ADVANCING
+
+               PERFORM WRITE-LOG
            END-IF
            .
+
+       WRITE-LOG.
+           PERFORM GET-TIMESTAMP
+           INITIALIZE REPORT-RECORD
+           STRING WS-BASE-TIMESTAMP DELIMITED BY SIZE
+                  ", " DELIMITED BY SIZE
+                  FUNCTION TRIM(WS-OPERATOR-ID) DELIMITED BY SIZE
+                  ", " DELIMITED BY SIZE
+                  FUNCTION TRIM(WS-FIELD-NAME) DELIMITED BY SIZE
+                  ", " DELIMITED BY SIZE
+                  FUNCTION TRIM(WS-STATUS) DELIMITED BY SIZE
+                  ", " DELIMITED BY SIZE
+                  FUNCTION TRIM(WS-FIELD-VALUE-DISPLAY) DELIMITED BY SIZE
+                  INTO REPORT-RECORD
+           WRITE REPORT-RECORD.
 
        INITIALIZATION.
            MOVE "Initialization" TO WS-FIELD-NAME
