@@ -107,13 +107,13 @@
            IF WS-ACCESS-CODE = WS-EXPECTED-CODE THEN
                DISPLAY "   " WITH NO ADVANCING
                DISPLAY WS-ESC "[32m" WITH NO ADVANCING
-               DISPLAY "ACCESS GRANTED." WITH NO ADVANCING
+               DISPLAY "[+] ACCESS GRANTED." WITH NO ADVANCING
                DISPLAY WS-ESC "[0m"
                CALL "C$SLEEP" USING 1
            ELSE
                DISPLAY "   " WITH NO ADVANCING
                DISPLAY WS-ESC "[31m" WITH NO ADVANCING
-               DISPLAY "ACCESS DENIED." WITH NO ADVANCING
+               DISPLAY "[X] ACCESS DENIED." WITH NO ADVANCING
                DISPLAY WS-ESC "[0m"
                STOP RUN
            END-IF.
@@ -162,10 +162,18 @@
                DISPLAY WS-ESC "[" UI-LINE ";26H" WITH NO ADVANCING
                IF WS-STATUS(1:6) = "FAILED"
                    DISPLAY WS-ESC "[31m" WITH NO ADVANCING
+                   DISPLAY "[X] " WITH NO ADVANCING
+                   DISPLAY WS-STATUS(1:6) WITH NO ADVANCING
                ELSE
-                   DISPLAY WS-ESC "[32m" WITH NO ADVANCING
+                   IF WS-STATUS(1:6) = "PASSED"
+                       DISPLAY WS-ESC "[32m" WITH NO ADVANCING
+                       DISPLAY "[+] " WITH NO ADVANCING
+                       DISPLAY WS-STATUS(1:6) WITH NO ADVANCING
+                   ELSE
+                       DISPLAY WS-ESC "[37m" WITH NO ADVANCING
+                       DISPLAY WS-STATUS WITH NO ADVANCING
+                   END-IF
                END-IF
-               DISPLAY WS-STATUS WITH NO ADVANCING
                DISPLAY WS-ESC "[0m" WITH NO ADVANCING
 
                *> Position and print Value (Col 38)
@@ -231,10 +239,10 @@
            DISPLAY WS-ESC "[11;19H" WITH NO ADVANCING
            IF WS-FAILED = "Y"
                DISPLAY WS-ESC "[31m" WITH NO ADVANCING
-               DISPLAY "PROCESS FAILED                                " WITH NO ADVANCING
+               DISPLAY "[X] PROCESS FAILED                            " WITH NO ADVANCING
            ELSE
                DISPLAY WS-ESC "[32m" WITH NO ADVANCING
-               DISPLAY "PROCESS COMPLETED SUCCESSFULLY                " WITH NO ADVANCING
+               DISPLAY "[+] PROCESS COMPLETED SUCCESSFULLY            " WITH NO ADVANCING
            END-IF
            DISPLAY WS-ESC "[0m" WITH NO ADVANCING
            *> Move cursor below table (Line 13) to exit cleanly
