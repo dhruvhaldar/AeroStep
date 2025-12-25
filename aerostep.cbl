@@ -109,7 +109,6 @@
                DISPLAY WS-ESC "[32m" WITH NO ADVANCING
                DISPLAY "ACCESS GRANTED." WITH NO ADVANCING
                DISPLAY WS-ESC "[0m"
-               CALL "C$SLEEP" USING 1
            ELSE
                DISPLAY "   " WITH NO ADVANCING
                DISPLAY WS-ESC "[31m" WITH NO ADVANCING
