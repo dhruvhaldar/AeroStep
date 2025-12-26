@@ -45,6 +45,10 @@
        01 WS-STATUS                 PIC X(10).
        01 WS-ESC                    PIC X VALUE X'1B'.
 
+       *> Buffers for UI optimization
+       01 WS-UI-ROW-BUFFER           PIC X(200).
+       01 WS-STATUS-BUFFER           PIC X(50).
+
        PROCEDURE DIVISION.
 
        MAIN-LOGIC.
@@ -156,35 +160,37 @@
            END-EVALUATE
 
            IF UI-LINE > 0
-               *> Position and print Step Name (Col 3)
-               DISPLAY WS-ESC "[" UI-LINE ";3H" WITH NO ADVANCING
-               DISPLAY WS-FIELD-NAME(1:20) WITH NO ADVANCING
+               *> Optimized: Construct single buffer to reduce I/O and syscalls
+               INITIALIZE WS-UI-ROW-BUFFER
+               INITIALIZE WS-STATUS-BUFFER
 
-               *> Position and print Status (Col 26)
-               DISPLAY WS-ESC "[" UI-LINE ";26H" WITH NO ADVANCING
+               *> Construct Status Buffer with Colors
                IF WS-STATUS(1:6) = "FAILED"
-                   DISPLAY WS-ESC "[31m" WITH NO ADVANCING
-                   DISPLAY "[X] " WITH NO ADVANCING
-                   DISPLAY WS-STATUS(1:6) WITH NO ADVANCING
+                   STRING WS-ESC "[31m[X] " WS-STATUS(1:6) WS-ESC "[0m"
+                       DELIMITED BY SIZE INTO WS-STATUS-BUFFER
                ELSE
                    IF WS-STATUS(1:6) = "PASSED"
-                       DISPLAY WS-ESC "[32m" WITH NO ADVANCING
-                       DISPLAY "[+] " WITH NO ADVANCING
-                       DISPLAY WS-STATUS(1:6) WITH NO ADVANCING
+                       STRING WS-ESC "[32m[+] " WS-STATUS(1:6) WS-ESC "[0m"
+                           DELIMITED BY SIZE INTO WS-STATUS-BUFFER
                    ELSE
-                       DISPLAY WS-ESC "[37m" WITH NO ADVANCING
-                       DISPLAY WS-STATUS WITH NO ADVANCING
+                       STRING WS-ESC "[37m" WS-STATUS WS-ESC "[0m"
+                           DELIMITED BY SIZE INTO WS-STATUS-BUFFER
                    END-IF
                END-IF
-               DISPLAY WS-ESC "[0m" WITH NO ADVANCING
 
-               *> Position and print Value (Col 38)
-               DISPLAY WS-ESC "[" UI-LINE ";38H" WITH NO ADVANCING
-               DISPLAY WS-FIELD-VALUE-DISPLAY WITH NO ADVANCING
+               *> Construct Full Row Buffer
+               *> Layout: Absolute positioning used within string to maintain grid
+               STRING WS-ESC "[" UI-LINE ";3H"          *> Position: Name (Col 3)
+                      WS-FIELD-NAME(1:20)
+                      WS-ESC "[" UI-LINE ";26H"         *> Position: Status (Col 26)
+                      FUNCTION TRIM(WS-STATUS-BUFFER)
+                      WS-ESC "[" UI-LINE ";38H"         *> Position: Value (Col 38)
+                      WS-FIELD-VALUE-DISPLAY
+                      WS-ESC "[" UI-LINE ";48H"         *> Position: Timestamp (Col 48)
+                      WS-BASE-TIMESTAMP
+                      DELIMITED BY SIZE INTO WS-UI-ROW-BUFFER
 
-               *> Position and print Timestamp (Col 48)
-               DISPLAY WS-ESC "[" UI-LINE ";48H" WITH NO ADVANCING
-               DISPLAY WS-BASE-TIMESTAMP WITH NO ADVANCING
+               DISPLAY FUNCTION TRIM(WS-UI-ROW-BUFFER) WITH NO ADVANCING
 
                PERFORM WRITE-LOG
            END-IF
