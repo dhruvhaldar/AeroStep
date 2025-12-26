@@ -9,3 +9,7 @@
 ## 2025-05-27 - Text-Based Icons for Accessibility
 **Learning:** Color-coded status messages (Green/Red) are insufficient for accessibility (e.g., color blindness) or monochrome terminals. Adding distinct text icons (`[+]`/`[X]`) provides immediate, unambiguous feedback.
 **Action:** Augment status messages with symbolic prefixes (e.g., `[+]` for success, `[X]` for failure) to ensure state is communicable without color.
+
+## 2025-12-26 - High-Fidelity CLI Borders
+**Learning:** Users perceive applications using Unicode box-drawing characters as significantly more polished and "professional" than those using ASCII fallback characters (+, -, |). However, inserting these multi-byte characters directly into COBOL strings can cause line-length issues and fragility.
+**Action:** When implementing high-fidelity borders in COBOL, define the Unicode characters as hexadecimal constants (e.g., `WS-BOX-TOP-START PIC X(3) VALUE X'E2948C'`) in `WORKING-STORAGE` and construct lines programmatically or via concatenation.

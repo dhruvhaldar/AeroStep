@@ -45,6 +45,19 @@
        01 WS-STATUS                 PIC X(10).
        01 WS-ESC                    PIC X VALUE X'1B'.
 
+       *> Unicode Box Drawing Characters (Split to avoid line length issues)
+       01 WS-BOX-TOP-START          PIC X(3) VALUE X'E2948C'. *> ┌
+       01 WS-BOX-HORIZ              PIC X(3) VALUE X'E29480'. *> ─
+       01 WS-BOX-TOP-END            PIC X(3) VALUE X'E29490'. *> ┐
+       01 WS-BOX-VERT               PIC X(3) VALUE X'E29482'. *> │
+       01 WS-BOX-BOT-START          PIC X(3) VALUE X'E29494'. *> └
+       01 WS-BOX-BOT-END            PIC X(3) VALUE X'E29498'. *> ┘
+       01 WS-BOX-T-LEFT             PIC X(3) VALUE X'E2949C'. *> ├
+       01 WS-BOX-T-RIGHT            PIC X(3) VALUE X'E294A4'. *> ┤
+       01 WS-BOX-T-DOWN             PIC X(3) VALUE X'E294AC'. *> ┬
+       01 WS-BOX-T-UP               PIC X(3) VALUE X'E294B4'. *> ┴
+       01 WS-BOX-CROSS              PIC X(3) VALUE X'E294BC'. *> ┼
+
        PROCEDURE DIVISION.
 
        MAIN-LOGIC.
@@ -79,9 +92,18 @@
 
        LOGIN-SEQUENCE.
            PERFORM CLEAR-SCREEN
-           DISPLAY "+------------------------------------------------------------------------------+"
-           DISPLAY "|                        SECURITY ACCESS CONTROL                               |"
-           DISPLAY "+------------------------------------------------------------------------------+"
+           *> Draw Login Box Top: ┌ + 78*─ + ┐
+           DISPLAY WS-BOX-TOP-START WITH NO ADVANCING
+           PERFORM 78 TIMES DISPLAY WS-BOX-HORIZ WITH NO ADVANCING END-PERFORM
+           DISPLAY WS-BOX-TOP-END
+
+           DISPLAY WS-BOX-VERT "                        SECURITY ACCESS CONTROL                               " WS-BOX-VERT
+
+           *> Draw Login Box Bottom: └ + 78*─ + ┘
+           DISPLAY WS-BOX-BOT-START WITH NO ADVANCING
+           PERFORM 78 TIMES DISPLAY WS-BOX-HORIZ WITH NO ADVANCING END-PERFORM
+           DISPLAY WS-BOX-BOT-END
+
            DISPLAY " "
            DISPLAY "   OPERATOR IDENTIFICATION REQUIRED"
            DISPLAY " "
@@ -127,18 +149,62 @@
        
        DRAW-UI-SHELL.
            PERFORM CLEAR-SCREEN
-           DISPLAY "+------------------------------------------------------------------------------+"
-           DISPLAY "|                        AEROSTEP TESTING INTERFACE                            |"
-           DISPLAY "+------------------------------------------------------------------------------+"
-           DISPLAY "| Step                 | Status    | Value   | Timestamp                         |"
-           DISPLAY "+----------------------+-----------+---------+----------------------------------+"
-           DISPLAY "| Initialization       |           |         |                                  |"
-           DISPLAY "| Pressure Test        |           |         |                                  |"
-           DISPLAY "| Heat Treatment       |           |         |                                  |"
-           DISPLAY "| Quality Inspection   |           |         |                                  |"
-           DISPLAY "+----------------------+-----------+---------+----------------------------------+"
-           DISPLAY "| Overall Status:                                                       |"
-           DISPLAY "+------------------------------------------------------------------------------+".
+           *> Top Border
+           DISPLAY WS-BOX-TOP-START WITH NO ADVANCING
+           PERFORM 78 TIMES DISPLAY WS-BOX-HORIZ WITH NO ADVANCING END-PERFORM
+           DISPLAY WS-BOX-TOP-END
+
+           DISPLAY WS-BOX-VERT "                        AEROSTEP TESTING INTERFACE                            " WS-BOX-VERT
+
+           *> Header Separator: ├ + 22*─ + ┬ + 11*─ + ┬ + 9*─ + ┬ + 33*─ + ┤
+           DISPLAY WS-BOX-T-LEFT WITH NO ADVANCING
+           PERFORM 22 TIMES DISPLAY WS-BOX-HORIZ WITH NO ADVANCING END-PERFORM
+           DISPLAY WS-BOX-T-DOWN WITH NO ADVANCING
+           PERFORM 11 TIMES DISPLAY WS-BOX-HORIZ WITH NO ADVANCING END-PERFORM
+           DISPLAY WS-BOX-T-DOWN WITH NO ADVANCING
+           PERFORM 9 TIMES DISPLAY WS-BOX-HORIZ WITH NO ADVANCING END-PERFORM
+           DISPLAY WS-BOX-T-DOWN WITH NO ADVANCING
+           PERFORM 33 TIMES DISPLAY WS-BOX-HORIZ WITH NO ADVANCING END-PERFORM
+           DISPLAY WS-BOX-T-RIGHT
+
+           *> Header Row
+           DISPLAY WS-BOX-VERT " Step                 " WS-BOX-VERT " Status    " WS-BOX-VERT " Value   " WS-BOX-VERT " Timestamp                       " WS-BOX-VERT
+
+           *> Header Bottom / Row Separator
+           DISPLAY WS-BOX-T-LEFT WITH NO ADVANCING
+           PERFORM 22 TIMES DISPLAY WS-BOX-HORIZ WITH NO ADVANCING END-PERFORM
+           DISPLAY WS-BOX-CROSS WITH NO ADVANCING
+           PERFORM 11 TIMES DISPLAY WS-BOX-HORIZ WITH NO ADVANCING END-PERFORM
+           DISPLAY WS-BOX-CROSS WITH NO ADVANCING
+           PERFORM 9 TIMES DISPLAY WS-BOX-HORIZ WITH NO ADVANCING END-PERFORM
+           DISPLAY WS-BOX-CROSS WITH NO ADVANCING
+           PERFORM 33 TIMES DISPLAY WS-BOX-HORIZ WITH NO ADVANCING END-PERFORM
+           DISPLAY WS-BOX-T-RIGHT
+
+           *> Data Rows (Placeholders)
+           DISPLAY WS-BOX-VERT " Initialization       " WS-BOX-VERT "           " WS-BOX-VERT "         " WS-BOX-VERT "                                 " WS-BOX-VERT
+           DISPLAY WS-BOX-VERT " Pressure Test        " WS-BOX-VERT "           " WS-BOX-VERT "         " WS-BOX-VERT "                                 " WS-BOX-VERT
+           DISPLAY WS-BOX-VERT " Heat Treatment       " WS-BOX-VERT "           " WS-BOX-VERT "         " WS-BOX-VERT "                                 " WS-BOX-VERT
+           DISPLAY WS-BOX-VERT " Quality Inspection   " WS-BOX-VERT "           " WS-BOX-VERT "         " WS-BOX-VERT "                                 " WS-BOX-VERT
+
+           *> Bottom Separator (Table Bottom)
+           DISPLAY WS-BOX-T-LEFT WITH NO ADVANCING
+           PERFORM 22 TIMES DISPLAY WS-BOX-HORIZ WITH NO ADVANCING END-PERFORM
+           DISPLAY WS-BOX-T-UP WITH NO ADVANCING
+           PERFORM 11 TIMES DISPLAY WS-BOX-HORIZ WITH NO ADVANCING END-PERFORM
+           DISPLAY WS-BOX-T-UP WITH NO ADVANCING
+           PERFORM 9 TIMES DISPLAY WS-BOX-HORIZ WITH NO ADVANCING END-PERFORM
+           DISPLAY WS-BOX-T-UP WITH NO ADVANCING
+           PERFORM 33 TIMES DISPLAY WS-BOX-HORIZ WITH NO ADVANCING END-PERFORM
+           DISPLAY WS-BOX-T-RIGHT
+
+           *> Overall Status Row
+           DISPLAY WS-BOX-VERT " Overall Status:                                                              " WS-BOX-VERT
+
+           *> Bottom Border
+           DISPLAY WS-BOX-BOT-START WITH NO ADVANCING
+           PERFORM 78 TIMES DISPLAY WS-BOX-HORIZ WITH NO ADVANCING END-PERFORM
+           DISPLAY WS-BOX-BOT-END.
 
        UPDATE-UI-ROW.
            MOVE 0 TO UI-LINE
