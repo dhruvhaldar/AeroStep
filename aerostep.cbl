@@ -4,7 +4,7 @@
        ENVIRONMENT DIVISION.
        INPUT-OUTPUT SECTION.
        FILE-CONTROL.
-           SELECT REPORT-FILE ASSIGN TO "aerostep.txt"
+           SELECT OPTIONAL REPORT-FILE ASSIGN TO "aerostep.txt"
                ORGANIZATION IS LINE SEQUENTIAL
                FILE STATUS IS WS-FILE-STATUS.
 
@@ -48,13 +48,13 @@
        PROCEDURE DIVISION.
 
        MAIN-LOGIC.
-           PERFORM LOGIN-SEQUENCE
-
-           OPEN OUTPUT REPORT-FILE
-           IF WS-FILE-STATUS NOT = "00"
+           OPEN EXTEND REPORT-FILE
+           IF WS-FILE-STATUS NOT = "00" AND WS-FILE-STATUS NOT = "05"
                DISPLAY "CRITICAL ERROR: CANNOT OPEN LOG FILE. STATUS: " WS-FILE-STATUS
                STOP RUN
            END-IF
+
+           PERFORM LOGIN-SEQUENCE
 
            PERFORM DRAW-UI-SHELL
 
@@ -112,11 +112,20 @@
                DISPLAY WS-ESC "[32m" WITH NO ADVANCING
                DISPLAY "[+] ACCESS GRANTED." WITH NO ADVANCING
                DISPLAY WS-ESC "[0m"
+               MOVE "LOGIN" TO WS-FIELD-NAME
+               MOVE "SUCCESS" TO WS-STATUS
+               MOVE SPACES TO WS-FIELD-VALUE-DISPLAY
+               PERFORM WRITE-LOG
            ELSE
                DISPLAY "   " WITH NO ADVANCING
                DISPLAY WS-ESC "[31m" WITH NO ADVANCING
                DISPLAY "[X] ACCESS DENIED." WITH NO ADVANCING
                DISPLAY WS-ESC "[0m"
+               MOVE "LOGIN" TO WS-FIELD-NAME
+               MOVE "DENIED" TO WS-STATUS
+               MOVE SPACES TO WS-FIELD-VALUE-DISPLAY
+               PERFORM WRITE-LOG
+               CLOSE REPORT-FILE
                STOP RUN
            END-IF.
        
