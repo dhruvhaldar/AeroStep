@@ -94,6 +94,11 @@
            *> Sanitize input to prevent log injection
            INSPECT WS-OPERATOR-ID REPLACING ALL WS-ESC BY SPACE
            INSPECT WS-OPERATOR-ID REPLACING ALL "," BY SPACE
+           *> Prevent CSV injection (Formula Injection)
+           INSPECT WS-OPERATOR-ID REPLACING ALL "=" BY SPACE
+           INSPECT WS-OPERATOR-ID REPLACING ALL "+" BY SPACE
+           INSPECT WS-OPERATOR-ID REPLACING ALL "-" BY SPACE
+           INSPECT WS-OPERATOR-ID REPLACING ALL "@" BY SPACE
            DISPLAY " "
            DISPLAY "   ACCESS CODE: " WITH NO ADVANCING
            *> Use ANSI Hidden attribute to mask input
