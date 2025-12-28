@@ -32,13 +32,12 @@
        01 WS-QUALITY                 PIC 9(3).
        01 QUALITY-THRESH             PIC 9(3) VALUE 70.
 
-       01 WS-TIMESTAMP               PIC X(80).
        01 WS-BASE-TIMESTAMP          PIC X(20).
        01 WS-FIELD-NAME              PIC X(30).
        01 WS-FIELD-VALUE             PIC 9(4).
        01 WS-FIELD-VALUE-DISPLAY    PIC X(4).
        01 WS-DATE                   PIC 9(8).
-       01 WS-TIME                   PIC 9(6).
+       01 WS-TIME                   PIC 9(8).
 
        01 UI-LINE                   PIC 9(2) VALUE 0.
 
@@ -154,20 +153,6 @@
            DISPLAY "+------------------------------------------------------------------------------+".
 
        UPDATE-UI-ROW.
-           MOVE 0 TO UI-LINE
-
-           *> Debugging with EVALUATE
-           EVALUATE WS-FIELD-NAME
-               WHEN "Initialization"
-                   MOVE 6 TO UI-LINE
-               WHEN "Pressure Test"
-                   MOVE 7 TO UI-LINE
-               WHEN "Heat Treatment"
-                   MOVE 8 TO UI-LINE
-               WHEN "Quality Inspection"
-                   MOVE 9 TO UI-LINE
-           END-EVALUATE
-
            IF UI-LINE > 0
                *> Optimized: Construct single buffer to reduce I/O and syscalls
                INITIALIZE WS-UI-ROW-BUFFER
@@ -222,8 +207,7 @@
 
        INITIALIZATION.
            MOVE "Initialization" TO WS-FIELD-NAME
-           PERFORM GET-TIMESTAMP
-           MOVE WS-BASE-TIMESTAMP TO WS-TIMESTAMP
+           MOVE 6 TO UI-LINE
            MOVE SPACES TO WS-FIELD-VALUE-DISPLAY
            MOVE "PASSED" TO WS-STATUS
            PERFORM UPDATE-UI-ROW.
@@ -231,6 +215,7 @@
        PRESSURE-TEST.
            COMPUTE WS-PRESSURE = FUNCTION RANDOM * (MAX-PRESS - MIN-PRESS + 1) + MIN-PRESS
            MOVE "Pressure Test" TO WS-FIELD-NAME
+           MOVE 7 TO UI-LINE
            MOVE WS-PRESSURE TO WS-FIELD-VALUE
            MOVE WS-PRESSURE TO WS-FIELD-VALUE-DISPLAY
            IF WS-PRESSURE < MIN-PRESS OR WS-PRESSURE > MAX-PRESS
@@ -244,6 +229,7 @@
        HEAT-TREATMENT.
            COMPUTE WS-HEAT = FUNCTION RANDOM * (MAX-HEAT - MIN-HEAT + 1) + MIN-HEAT
            MOVE "Heat Treatment" TO WS-FIELD-NAME
+           MOVE 8 TO UI-LINE
            MOVE WS-HEAT TO WS-FIELD-VALUE
            MOVE WS-HEAT TO WS-FIELD-VALUE-DISPLAY
            IF WS-HEAT < MIN-HEAT OR WS-HEAT > MAX-HEAT
@@ -257,6 +243,7 @@
        QUALITY-INSPECTION.
            COMPUTE WS-QUALITY = FUNCTION RANDOM * 100
            MOVE "Quality Inspection" TO WS-FIELD-NAME
+           MOVE 9 TO UI-LINE
            MOVE WS-QUALITY TO WS-FIELD-VALUE
            MOVE WS-QUALITY TO WS-FIELD-VALUE-DISPLAY
            IF WS-QUALITY < QUALITY-THRESH
@@ -268,7 +255,6 @@
            PERFORM UPDATE-UI-ROW.
 
        FINALIZE.
-           PERFORM GET-TIMESTAMP
            *> Position cursor to Overall Status line (Line 11), after label (Col 19)
            DISPLAY WS-ESC "[11;19H" WITH NO ADVANCING
            IF WS-FAILED = "Y"
