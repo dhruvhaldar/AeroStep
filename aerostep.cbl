@@ -48,9 +48,37 @@
        01 WS-UI-ROW-BUFFER           PIC X(200).
        01 WS-STATUS-BUFFER           PIC X(50).
 
+       *> Unicode Box Drawing Characters
+       01 BOX-CHARS.
+          05 BOX-TL PIC X(3) VALUE X'E2948C'. *> ┌
+          05 BOX-TR PIC X(3) VALUE X'E29490'. *> ┐
+          05 BOX-BL PIC X(3) VALUE X'E29494'. *> └
+          05 BOX-BR PIC X(3) VALUE X'E29498'. *> ┘
+          05 BOX-V  PIC X(3) VALUE X'E29482'. *> │
+          05 BOX-H  PIC X(3) VALUE X'E29480'. *> ─
+          05 BOX-T-DOWN  PIC X(3) VALUE X'E294AC'. *> ┬
+          05 BOX-T-UP    PIC X(3) VALUE X'E294B4'. *> ┴
+          05 BOX-CROSS   PIC X(3) VALUE X'E294BC'. *> ┼
+          05 BOX-T-RIGHT PIC X(3) VALUE X'E2949C'. *> ├
+          05 BOX-T-LEFT  PIC X(3) VALUE X'E294A4'. *> ┤
+
+       *> Pre-calculated Horizontal Lines (N chars * 3 bytes)
+       01 H-LINE-78 PIC X(234).
+       01 H-LINE-22 PIC X(66).
+       01 H-LINE-11 PIC X(33).
+       01 H-LINE-9  PIC X(27).
+       01 H-LINE-34 PIC X(102).
+
        PROCEDURE DIVISION.
 
        MAIN-LOGIC.
+           *> Initialize Horizontal Lines
+           MOVE ALL X'E29480' TO H-LINE-78
+           MOVE ALL X'E29480' TO H-LINE-22
+           MOVE ALL X'E29480' TO H-LINE-11
+           MOVE ALL X'E29480' TO H-LINE-9
+           MOVE ALL X'E29480' TO H-LINE-34
+
            OPEN EXTEND REPORT-FILE
            IF WS-FILE-STATUS NOT = "00" AND WS-FILE-STATUS NOT = "05"
                DISPLAY "CRITICAL ERROR: CANNOT OPEN LOG FILE. STATUS: " WS-FILE-STATUS
@@ -82,9 +110,15 @@
 
        LOGIN-SEQUENCE.
            PERFORM CLEAR-SCREEN
-           DISPLAY "+------------------------------------------------------------------------------+"
-           DISPLAY "|                        SECURITY ACCESS CONTROL                               |"
-           DISPLAY "+------------------------------------------------------------------------------+"
+           *> Top Border
+           DISPLAY BOX-TL H-LINE-78 BOX-TR
+
+           *> Middle Row
+           DISPLAY BOX-V "                        SECURITY ACCESS CONTROL                               " BOX-V
+
+           *> Bottom Border
+           DISPLAY BOX-BL H-LINE-78 BOX-BR
+
            DISPLAY " "
            DISPLAY "   OPERATOR IDENTIFICATION REQUIRED"
            DISPLAY " "
@@ -139,18 +173,36 @@
        
        DRAW-UI-SHELL.
            PERFORM CLEAR-SCREEN
-           DISPLAY "+------------------------------------------------------------------------------+"
-           DISPLAY "|                        AEROSTEP TESTING INTERFACE                            |"
-           DISPLAY "+------------------------------------------------------------------------------+"
-           DISPLAY "| Step                 | Status    | Value   | Timestamp                         |"
-           DISPLAY "+----------------------+-----------+---------+----------------------------------+"
-           DISPLAY "| Initialization       |           |         |                                  |"
-           DISPLAY "| Pressure Test        |           |         |                                  |"
-           DISPLAY "| Heat Treatment       |           |         |                                  |"
-           DISPLAY "| Quality Inspection   |           |         |                                  |"
-           DISPLAY "+----------------------+-----------+---------+----------------------------------+"
-           DISPLAY "| Overall Status:                                                       |"
-           DISPLAY "+------------------------------------------------------------------------------+".
+           *> Main Shell Top
+           DISPLAY BOX-TL H-LINE-78 BOX-TR
+           DISPLAY BOX-V "                        AEROSTEP TESTING INTERFACE                            " BOX-V
+
+           *> Header Divider (Top of columns)
+           *> +----------------------+-----------+---------+----------------------------------+
+           DISPLAY BOX-T-RIGHT H-LINE-22 BOX-T-DOWN H-LINE-11 BOX-T-DOWN H-LINE-9 BOX-T-DOWN H-LINE-34 BOX-T-LEFT
+
+           *> Header Text
+           DISPLAY BOX-V " Step                 " BOX-V " Status    " BOX-V " Value   " BOX-V " Timestamp                         " BOX-V
+
+           *> Header Divider (Bottom of columns / Top of data)
+           *> +----------------------+-----------+---------+----------------------------------+
+           DISPLAY BOX-T-RIGHT H-LINE-22 BOX-CROSS H-LINE-11 BOX-CROSS H-LINE-9 BOX-CROSS H-LINE-34 BOX-T-LEFT
+
+           *> Empty Rows
+           DISPLAY BOX-V " Initialization       " BOX-V "           " BOX-V "         " BOX-V "                                  " BOX-V
+           DISPLAY BOX-V " Pressure Test        " BOX-V "           " BOX-V "         " BOX-V "                                  " BOX-V
+           DISPLAY BOX-V " Heat Treatment       " BOX-V "           " BOX-V "         " BOX-V "                                  " BOX-V
+           DISPLAY BOX-V " Quality Inspection   " BOX-V "           " BOX-V "         " BOX-V "                                  " BOX-V
+
+           *> Bottom Divider (End of data / Start of Overall Status)
+           *> +----------------------+-----------+---------+----------------------------------+
+           DISPLAY BOX-T-RIGHT H-LINE-22 BOX-T-UP H-LINE-11 BOX-T-UP H-LINE-9 BOX-T-UP H-LINE-34 BOX-T-LEFT
+
+           *> Overall Status
+           DISPLAY BOX-V " Overall Status:                                                       " BOX-V
+
+           *> Final Bottom Border
+           DISPLAY BOX-BL H-LINE-78 BOX-BR.
 
        UPDATE-UI-ROW.
            IF UI-LINE > 0
