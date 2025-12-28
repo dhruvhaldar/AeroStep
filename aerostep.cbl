@@ -93,6 +93,16 @@
            *> Sanitize input to prevent log injection
            INSPECT WS-OPERATOR-ID REPLACING ALL WS-ESC BY SPACE
            INSPECT WS-OPERATOR-ID REPLACING ALL "," BY SPACE
+
+           *> Prevent CSV Injection (Formula Injection)
+           *> Only sanitize if the FIRST character is a trigger to avoid
+           *> breaking valid inputs like email addresses or hyphenated names.
+           IF WS-OPERATOR-ID(1:1) = "=" OR
+              WS-OPERATOR-ID(1:1) = "+" OR
+              WS-OPERATOR-ID(1:1) = "-" OR
+              WS-OPERATOR-ID(1:1) = "@"
+               MOVE SPACE TO WS-OPERATOR-ID(1:1)
+           END-IF
            DISPLAY " "
            DISPLAY "   ACCESS CODE: " WITH NO ADVANCING
            *> Use ANSI Hidden attribute to mask input
