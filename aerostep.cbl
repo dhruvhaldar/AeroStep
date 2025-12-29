@@ -17,6 +17,17 @@
        01 WS-FILE-STATUS              PIC XX.
        01 WS-FAILED                   PIC X VALUE "N".
 
+       *> Unicode Box Drawing Characters
+       01 WS-BOX-CHARS.
+           05 WS-TL      PIC X(3) VALUE X'E2948C'.
+           05 WS-TR      PIC X(3) VALUE X'E29490'.
+           05 WS-BL      PIC X(3) VALUE X'E29494'.
+           05 WS-BR      PIC X(3) VALUE X'E29498'.
+           05 WS-V       PIC X(3) VALUE X'E29482'.
+           05 WS-H-CHAR  PIC X(3) VALUE X'E29480'.
+           *> 78 chars * 3 bytes/char = 234 bytes for UTF-8 horizontal line
+           05 WS-H-LINE  PIC X(234).
+
        *> Login Variables
        01 WS-OPERATOR-ID              PIC X(20).
        01 WS-ACCESS-CODE              PIC X(20).
@@ -51,6 +62,7 @@
        PROCEDURE DIVISION.
 
        MAIN-LOGIC.
+           MOVE ALL X'E29480' TO WS-H-LINE.
            OPEN EXTEND REPORT-FILE
            IF WS-FILE-STATUS NOT = "00" AND WS-FILE-STATUS NOT = "05"
                DISPLAY "CRITICAL ERROR: CANNOT OPEN LOG FILE. STATUS: " WS-FILE-STATUS
@@ -82,9 +94,9 @@
 
        LOGIN-SEQUENCE.
            PERFORM CLEAR-SCREEN
-           DISPLAY "+------------------------------------------------------------------------------+"
-           DISPLAY "|                        SECURITY ACCESS CONTROL                               |"
-           DISPLAY "+------------------------------------------------------------------------------+"
+           DISPLAY WS-TL WS-H-LINE(1:234) WS-TR
+           DISPLAY WS-V "                        SECURITY ACCESS CONTROL                               " WS-V
+           DISPLAY WS-BL WS-H-LINE(1:234) WS-BR
            DISPLAY " "
            DISPLAY "   OPERATOR IDENTIFICATION REQUIRED"
            DISPLAY " "
@@ -94,7 +106,7 @@
            INSPECT WS-OPERATOR-ID REPLACING ALL WS-ESC BY SPACE
            INSPECT WS-OPERATOR-ID REPLACING ALL "," BY SPACE
            DISPLAY " "
-           DISPLAY "   ACCESS CODE: " WITH NO ADVANCING
+           DISPLAY "   ACCESS CODE (Hidden): " WITH NO ADVANCING
            *> Use ANSI Hidden attribute to mask input
            DISPLAY WS-ESC "[8m" WITH NO ADVANCING
            ACCEPT WS-ACCESS-CODE
