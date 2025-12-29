@@ -47,6 +47,8 @@
        *> Buffers for UI optimization
        01 WS-UI-ROW-BUFFER           PIC X(200).
        01 WS-STATUS-BUFFER           PIC X(50).
+       01 WS-PTR                     PIC 9(3).
+       01 WS-STATUS-PTR              PIC 9(3).
 
        PROCEDURE DIVISION.
 
@@ -154,21 +156,24 @@
 
        UPDATE-UI-ROW.
            IF UI-LINE > 0
-               *> Optimized: Construct single buffer to reduce I/O and syscalls
-               INITIALIZE WS-UI-ROW-BUFFER
-               INITIALIZE WS-STATUS-BUFFER
+               *> Optimized: Used pointer logic to avoid expensive INITIALIZE and TRIM
+               MOVE 1 TO WS-PTR
+               MOVE 1 TO WS-STATUS-PTR
 
                *> Construct Status Buffer with Colors
                IF WS-STATUS(1:6) = "FAILED"
                    STRING WS-ESC "[31m[X] " WS-STATUS(1:6) WS-ESC "[0m"
                        DELIMITED BY SIZE INTO WS-STATUS-BUFFER
+                       WITH POINTER WS-STATUS-PTR
                ELSE
                    IF WS-STATUS(1:6) = "PASSED"
                        STRING WS-ESC "[32m[+] " WS-STATUS(1:6) WS-ESC "[0m"
                            DELIMITED BY SIZE INTO WS-STATUS-BUFFER
+                           WITH POINTER WS-STATUS-PTR
                    ELSE
                        STRING WS-ESC "[37m" WS-STATUS WS-ESC "[0m"
                            DELIMITED BY SIZE INTO WS-STATUS-BUFFER
+                           WITH POINTER WS-STATUS-PTR
                    END-IF
                END-IF
 
@@ -177,14 +182,15 @@
                STRING WS-ESC "[" UI-LINE ";3H"          *> Position: Name (Col 3)
                       WS-FIELD-NAME(1:20)
                       WS-ESC "[" UI-LINE ";26H"         *> Position: Status (Col 26)
-                      FUNCTION TRIM(WS-STATUS-BUFFER)
+                      WS-STATUS-BUFFER(1:WS-STATUS-PTR - 1)
                       WS-ESC "[" UI-LINE ";38H"         *> Position: Value (Col 38)
                       WS-FIELD-VALUE-DISPLAY
                       WS-ESC "[" UI-LINE ";48H"         *> Position: Timestamp (Col 48)
-                      WS-BASE-TIMESTAMP
+                      WS-BASE-TIMESTAMP(1:19)
                       DELIMITED BY SIZE INTO WS-UI-ROW-BUFFER
+                      WITH POINTER WS-PTR
 
-               DISPLAY FUNCTION TRIM(WS-UI-ROW-BUFFER) WITH NO ADVANCING
+               DISPLAY WS-UI-ROW-BUFFER(1:WS-PTR - 1) WITH NO ADVANCING
 
                PERFORM WRITE-LOG
            END-IF
