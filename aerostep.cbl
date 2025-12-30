@@ -83,14 +83,15 @@
            STOP RUN.
 
        LOGIN-SEQUENCE.
-           PERFORM CLEAR-SCREEN
-           DISPLAY "+------------------------------------------------------------------------------+"
-           DISPLAY "|                        SECURITY ACCESS CONTROL                               |"
-           DISPLAY "+------------------------------------------------------------------------------+"
-           DISPLAY " "
-           DISPLAY "   OPERATOR IDENTIFICATION REQUIRED"
-           DISPLAY " "
-           DISPLAY "   OPERATOR ID: " WITH NO ADVANCING
+           *> Optimized: Batched UI rendering to reduce I/O system calls
+           DISPLAY WS-ESC "[2J" WS-ESC "[H"
+                   "+------------------------------------------------------------------------------+" X'0A'
+                   "|                        SECURITY ACCESS CONTROL                               |" X'0A'
+                   "+------------------------------------------------------------------------------+" X'0A'
+                   " " X'0A'
+                   "   OPERATOR IDENTIFICATION REQUIRED" X'0A'
+                   " " X'0A'
+                   "   OPERATOR ID: " WITH NO ADVANCING
            ACCEPT WS-OPERATOR-ID
            *> Sanitize input to prevent log injection
            INSPECT WS-OPERATOR-ID REPLACING ALL WS-ESC BY SPACE
@@ -150,19 +151,20 @@
            DISPLAY WS-ESC "[H" WITH NO ADVANCING.
        
        DRAW-UI-SHELL.
-           PERFORM CLEAR-SCREEN
-           DISPLAY "+------------------------------------------------------------------------------+"
-           DISPLAY "|                        AEROSTEP TESTING INTERFACE                            |"
-           DISPLAY "+------------------------------------------------------------------------------+"
-           DISPLAY "| Step                 | Status    | Value   | Timestamp                         |"
-           DISPLAY "+----------------------+-----------+---------+----------------------------------+"
-           DISPLAY "| Initialization       |           |         |                                  |"
-           DISPLAY "| Pressure Test        |           |         |                                  |"
-           DISPLAY "| Heat Treatment       |           |         |                                  |"
-           DISPLAY "| Quality Inspection   |           |         |                                  |"
-           DISPLAY "+----------------------+-----------+---------+----------------------------------+"
-           DISPLAY "| Overall Status:                                                       |"
-           DISPLAY "+------------------------------------------------------------------------------+".
+           *> Optimized: Batched UI rendering to reduce I/O system calls
+           DISPLAY WS-ESC "[2J" WS-ESC "[H"
+                   "+------------------------------------------------------------------------------+" X'0A'
+                   "|                        AEROSTEP TESTING INTERFACE                            |" X'0A'
+                   "+------------------------------------------------------------------------------+" X'0A'
+                   "| Step                 | Status    | Value   | Timestamp                         |" X'0A'
+                   "+----------------------+-----------+---------+----------------------------------+" X'0A'
+                   "| Initialization       |           |         |                                  |" X'0A'
+                   "| Pressure Test        |           |         |                                  |" X'0A'
+                   "| Heat Treatment       |           |         |                                  |" X'0A'
+                   "| Quality Inspection   |           |         |                                  |" X'0A'
+                   "+----------------------+-----------+---------+----------------------------------+" X'0A'
+                   "| Overall Status:                                                       |" X'0A'
+                   "+------------------------------------------------------------------------------+".
 
        UPDATE-UI-ROW.
            IF UI-LINE > 0
