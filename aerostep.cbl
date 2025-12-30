@@ -19,9 +19,9 @@
 
        *> Login Variables
        01 WS-OPERATOR-ID              PIC X(20).
-       01 WS-ACCESS-CODE              PIC X(20).
-       01 WS-EXPECTED-CODE            PIC X(20).
-       01 WS-ENV-CODE                 PIC X(20).
+       01 WS-ACCESS-CODE              PIC X(128).
+       01 WS-EXPECTED-CODE            PIC X(128).
+       01 WS-ENV-CODE                 PIC X(128).
 
        01 WS-PRESSURE                 PIC 9(4).
        01 MIN-PRESS                  PIC 9(4) VALUE 80.
