@@ -106,7 +106,7 @@
                MOVE SPACE TO WS-OPERATOR-ID(1:1)
            END-IF
            DISPLAY " "
-           DISPLAY "   ACCESS CODE: " WITH NO ADVANCING
+           DISPLAY "   ACCESS CODE (Hidden): " WITH NO ADVANCING
            *> Use ANSI Hidden attribute to mask input
            DISPLAY WS-ESC "[8m" WITH NO ADVANCING
            ACCEPT WS-ACCESS-CODE
@@ -151,6 +151,8 @@
        
        DRAW-UI-SHELL.
            PERFORM CLEAR-SCREEN
+           *> Hide Cursor during UI updates
+           DISPLAY WS-ESC "[?25l" WITH NO ADVANCING
            DISPLAY "+------------------------------------------------------------------------------+"
            DISPLAY "|                        AEROSTEP TESTING INTERFACE                            |"
            DISPLAY "+------------------------------------------------------------------------------+"
@@ -282,7 +284,9 @@
            END-IF
            DISPLAY WS-ESC "[0m" WITH NO ADVANCING
            *> Move cursor below table (Line 13) to exit cleanly
-           DISPLAY WS-ESC "[13;1H".
+           DISPLAY WS-ESC "[13;1H" WITH NO ADVANCING
+           *> Show Cursor before exit
+           DISPLAY WS-ESC "[?25h".
 
        GET-TIMESTAMP.
        ACCEPT WS-DATE FROM DATE YYYYMMDD
