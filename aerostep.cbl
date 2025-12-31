@@ -10,11 +10,15 @@
 
        DATA DIVISION.
        FILE SECTION.
-       FD  REPORT-FILE.
+       FD  REPORT-FILE
+           RECORD IS VARYING FROM 1 TO 120 CHARACTERS
+           DEPENDING ON WS-LOG-LEN.
        01  REPORT-RECORD               PIC X(120).
 
        WORKING-STORAGE SECTION.
        01 WS-FILE-STATUS              PIC XX.
+       01 WS-LOG-LEN                  PIC 9(3).
+       01 WS-LOG-PTR                  PIC 9(3).
        01 WS-FAILED                   PIC X VALUE "N".
 
        *> Login Variables
@@ -208,7 +212,9 @@
 
        WRITE-LOG.
            PERFORM GET-TIMESTAMP
-           INITIALIZE REPORT-RECORD
+           *> Optimization: Replaced expensive INITIALIZE and fixed-length WRITE
+           *> with pointer-based construction and variable-length record writing.
+           MOVE 1 TO WS-LOG-PTR
            STRING WS-BASE-TIMESTAMP DELIMITED BY SIZE
                   ", " DELIMITED BY SIZE
                   FUNCTION TRIM(WS-OPERATOR-ID) DELIMITED BY SIZE
@@ -219,6 +225,8 @@
                   ", " DELIMITED BY SIZE
                   FUNCTION TRIM(WS-FIELD-VALUE-DISPLAY) DELIMITED BY SIZE
                   INTO REPORT-RECORD
+                  WITH POINTER WS-LOG-PTR
+           COMPUTE WS-LOG-LEN = WS-LOG-PTR - 1
            WRITE REPORT-RECORD.
 
        INITIALIZATION.
