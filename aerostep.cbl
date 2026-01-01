@@ -109,7 +109,7 @@
                MOVE "_" TO WS-OPERATOR-ID(1:1)
            END-IF
            DISPLAY " "
-           DISPLAY "   ACCESS CODE: " WITH NO ADVANCING
+           DISPLAY "   ACCESS CODE (Hidden): " WITH NO ADVANCING
            *> Use ANSI Hidden attribute to mask input
            DISPLAY WS-ESC "[8m" WITH NO ADVANCING
            ACCEPT WS-ACCESS-CODE
