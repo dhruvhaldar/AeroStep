@@ -11,17 +11,17 @@
        DATA DIVISION.
        FILE SECTION.
        FD  REPORT-FILE.
-       01  REPORT-RECORD               PIC X(120).
+       01  REPORT-RECORD               PIC X(256).
 
        WORKING-STORAGE SECTION.
        01 WS-FILE-STATUS              PIC XX.
        01 WS-FAILED                   PIC X VALUE "N".
 
        *> Login Variables
-       01 WS-OPERATOR-ID              PIC X(20).
-       01 WS-ACCESS-CODE              PIC X(20).
-       01 WS-EXPECTED-CODE            PIC X(20).
-       01 WS-ENV-CODE                 PIC X(20).
+       01 WS-OPERATOR-ID              PIC X(64).
+       01 WS-ACCESS-CODE              PIC X(128).
+       01 WS-EXPECTED-CODE            PIC X(128).
+       01 WS-ENV-CODE                 PIC X(128).
 
        01 WS-PRESSURE                 PIC 9(4).
        01 MIN-PRESS                  PIC 9(4) VALUE 80.
