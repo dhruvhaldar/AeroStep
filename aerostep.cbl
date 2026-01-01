@@ -10,11 +10,12 @@
 
        DATA DIVISION.
        FILE SECTION.
-       FD  REPORT-FILE.
+       FD  REPORT-FILE RECORD IS VARYING DEPENDING ON WS-REC-LEN.
        01  REPORT-RECORD               PIC X(120).
 
        WORKING-STORAGE SECTION.
        01 WS-FILE-STATUS              PIC XX.
+       01 WS-REC-LEN                  PIC 9(3).
        01 WS-FAILED                   PIC X VALUE "N".
 
        *> Login Variables
@@ -49,6 +50,7 @@
        01 WS-STATUS-BUFFER           PIC X(50).
        01 WS-PTR                     PIC 9(3).
        01 WS-STATUS-PTR              PIC 9(3).
+       01 WS-LOG-PTR                 PIC 9(3).
 
        PROCEDURE DIVISION.
 
@@ -208,7 +210,7 @@
 
        WRITE-LOG.
            PERFORM GET-TIMESTAMP
-           INITIALIZE REPORT-RECORD
+           MOVE 1 TO WS-LOG-PTR
            STRING WS-BASE-TIMESTAMP DELIMITED BY SIZE
                   ", " DELIMITED BY SIZE
                   FUNCTION TRIM(WS-OPERATOR-ID) DELIMITED BY SIZE
@@ -219,6 +221,8 @@
                   ", " DELIMITED BY SIZE
                   FUNCTION TRIM(WS-FIELD-VALUE-DISPLAY) DELIMITED BY SIZE
                   INTO REPORT-RECORD
+                  WITH POINTER WS-LOG-PTR
+           COMPUTE WS-REC-LEN = WS-LOG-PTR - 1
            WRITE REPORT-RECORD.
 
        INITIALIZATION.
