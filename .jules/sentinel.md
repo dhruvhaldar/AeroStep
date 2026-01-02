@@ -12,3 +12,8 @@
 **Vulnerability:** Weak Authentication via Password Truncation
 **Learning:** In COBOL, moving a longer string into a shorter `PIC X` variable results in silent truncation without error. If the environment variable containing the password is longer than the variable defined to hold it (e.g., `PIC X(20)`), the application will only validate the truncated portion. This allows an attacker who knows the first 20 characters of a long password to gain access, or prevents the effective use of long passphrases.
 **Prevention:** Always define password and secret-holding variables with sufficient length (e.g., `PIC X(128)` or larger) to accommodate modern security requirements and avoid silent data loss.
+
+## 2026-01-02 - CSV Injection Bypass via Leading Spaces
+**Vulnerability:** Bypassing CSV Injection Protection with Leading Spaces
+**Learning:** Functions like `TRIM` used during logging can strip leading spaces that were preserving a malicious payload's position. If input validation checks only the first character *before* trimming, a payload like ` =cmd` passes validation but becomes `=cmd` in the log, executing the CSV injection.
+**Prevention:** Normalize input (e.g., `MOVE FUNCTION TRIM(INPUT) TO INPUT`) before performing validation checks to ensure the data being validated matches the data being processed/logged.

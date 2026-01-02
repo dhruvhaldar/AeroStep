@@ -122,6 +122,9 @@
            INSPECT WS-OPERATOR-ID REPLACING ALL WS-ESC BY SPACE
            INSPECT WS-OPERATOR-ID REPLACING ALL "," BY SPACE
 
+           *> Normalize input to prevent bypass via leading spaces
+           MOVE FUNCTION TRIM(WS-OPERATOR-ID) TO WS-OPERATOR-ID
+
            *> Prevent CSV Injection (Formula Injection)
            *> Only sanitize if the FIRST character is a trigger to avoid
            *> breaking valid inputs like email addresses or hyphenated names.
