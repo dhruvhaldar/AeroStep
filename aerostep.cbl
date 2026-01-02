@@ -47,9 +47,7 @@
 
        *> Buffers for UI optimization
        01 WS-UI-ROW-BUFFER           PIC X(200).
-       01 WS-STATUS-BUFFER           PIC X(50).
        01 WS-PTR                     PIC 9(3).
-       01 WS-STATUS-PTR              PIC 9(3).
        01 WS-LOG-PTR                 PIC 9(3).
 
        *> Unicode Box Drawing Characters (UTF-8 Hex)
@@ -120,7 +118,7 @@
            ACCEPT WS-OPERATOR-ID
            *> Sanitize input to prevent log injection
            INSPECT WS-OPERATOR-ID REPLACING ALL WS-ESC BY SPACE
-           INSPECT WS-OPERATOR-ID REPLACING ALL "," BY SPACE
+                                            ALL "," BY SPACE
 
            *> Prevent CSV Injection (Formula Injection)
            *> Only sanitize if the FIRST character is a trigger to avoid
@@ -149,20 +147,16 @@
                MOVE WS-ENV-CODE TO WS-EXPECTED-CODE
            END-IF
 
+           PERFORM GET-TIMESTAMP
+
            IF WS-ACCESS-CODE = WS-EXPECTED-CODE THEN
-               DISPLAY "   " WITH NO ADVANCING
-               DISPLAY WS-ESC "[32m" WITH NO ADVANCING
-               DISPLAY "[+] ACCESS GRANTED." WITH NO ADVANCING
-               DISPLAY WS-ESC "[0m"
+               DISPLAY "   " WS-ESC "[32m" "[+] ACCESS GRANTED." WS-ESC "[0m"
                MOVE "LOGIN" TO WS-FIELD-NAME
                MOVE "SUCCESS" TO WS-STATUS
                MOVE SPACES TO WS-FIELD-VALUE-DISPLAY
                PERFORM WRITE-LOG
            ELSE
-               DISPLAY "   " WITH NO ADVANCING
-               DISPLAY WS-ESC "[31m" WITH NO ADVANCING
-               DISPLAY "[X] ACCESS DENIED." WITH NO ADVANCING
-               DISPLAY WS-ESC "[0m"
+               DISPLAY "   " WS-ESC "[31m" "[X] ACCESS DENIED." WS-ESC "[0m"
                MOVE "LOGIN" TO WS-FIELD-NAME
                MOVE "DENIED" TO WS-STATUS
                MOVE SPACES TO WS-FIELD-VALUE-DISPLAY
@@ -173,8 +167,7 @@
        
        CLEAR-SCREEN.
            *> Clear screen using ANSI escape sequence (GnuCOBOL compatible)
-           DISPLAY WS-ESC "[2J" WITH NO ADVANCING
-           DISPLAY WS-ESC "[H" WITH NO ADVANCING.
+           DISPLAY WS-ESC "[2J" WS-ESC "[H" WITH NO ADVANCING.
        
        DRAW-UI-SHELL.
            PERFORM CLEAR-SCREEN
@@ -193,36 +186,38 @@
 
        UPDATE-UI-ROW.
            IF UI-LINE > 0
-               *> Optimized: Used pointer logic to avoid expensive INITIALIZE and TRIM
+               PERFORM GET-TIMESTAMP
+               *> Optimized: Direct buffering to avoid intermediate copies and reduce STRING overhead
                MOVE 1 TO WS-PTR
-               MOVE 1 TO WS-STATUS-PTR
 
-               *> Construct Status Buffer with Colors
+               *> 1. Name
+               STRING WS-ESC "[" UI-LINE ";3H"
+                      WS-FIELD-NAME(1:20)
+                      WS-ESC "[" UI-LINE ";26H"
+                      DELIMITED BY SIZE INTO WS-UI-ROW-BUFFER
+                      WITH POINTER WS-PTR
+
+               *> 2. Status with Colors (Merged logic to avoid WS-STATUS-BUFFER)
                IF WS-STATUS(1:6) = "FAILED"
                    STRING WS-ESC "[31m[X] " WS-STATUS(1:6) WS-ESC "[0m"
-                       DELIMITED BY SIZE INTO WS-STATUS-BUFFER
-                       WITH POINTER WS-STATUS-PTR
+                       DELIMITED BY SIZE INTO WS-UI-ROW-BUFFER
+                       WITH POINTER WS-PTR
                ELSE
                    IF WS-STATUS(1:6) = "PASSED"
                        STRING WS-ESC "[32m[+] " WS-STATUS(1:6) WS-ESC "[0m"
-                           DELIMITED BY SIZE INTO WS-STATUS-BUFFER
-                           WITH POINTER WS-STATUS-PTR
+                           DELIMITED BY SIZE INTO WS-UI-ROW-BUFFER
+                           WITH POINTER WS-PTR
                    ELSE
                        STRING WS-ESC "[37m" WS-STATUS WS-ESC "[0m"
-                           DELIMITED BY SIZE INTO WS-STATUS-BUFFER
-                           WITH POINTER WS-STATUS-PTR
+                           DELIMITED BY SIZE INTO WS-UI-ROW-BUFFER
+                           WITH POINTER WS-PTR
                    END-IF
                END-IF
 
-               *> Construct Full Row Buffer
-               *> Layout: Absolute positioning used within string to maintain grid
-               STRING WS-ESC "[" UI-LINE ";3H"          *> Position: Name (Col 3)
-                      WS-FIELD-NAME(1:20)
-                      WS-ESC "[" UI-LINE ";26H"         *> Position: Status (Col 26)
-                      WS-STATUS-BUFFER(1:WS-STATUS-PTR - 1)
-                      WS-ESC "[" UI-LINE ";38H"         *> Position: Value (Col 38)
+               *> 3. Value and Timestamp
+               STRING WS-ESC "[" UI-LINE ";38H"
                       WS-FIELD-VALUE-DISPLAY
-                      WS-ESC "[" UI-LINE ";48H"         *> Position: Timestamp (Col 48)
+                      WS-ESC "[" UI-LINE ";48H"
                       WS-BASE-TIMESTAMP(1:19)
                       DELIMITED BY SIZE INTO WS-UI-ROW-BUFFER
                       WITH POINTER WS-PTR
@@ -234,7 +229,7 @@
            .
 
        WRITE-LOG.
-           PERFORM GET-TIMESTAMP
+           *> Caller must ensure timestamp is set via GET-TIMESTAMP for efficiency
            MOVE 1 TO WS-LOG-PTR
            STRING WS-BASE-TIMESTAMP DELIMITED BY SIZE
                   ", " DELIMITED BY SIZE
@@ -329,17 +324,16 @@
            PERFORM UPDATE-UI-ROW.
 
        FINALIZE.
-           *> Position cursor to Overall Status line (Line 11), after label (Col 19)
-           DISPLAY WS-ESC "[11;19H" WITH NO ADVANCING
+           *> Consolidated display for efficiency
            IF WS-FAILED = "Y"
-               DISPLAY WS-ESC "[31m" WITH NO ADVANCING
-               DISPLAY "[X] PROCESS FAILED                            " WITH NO ADVANCING
+               DISPLAY WS-ESC "[11;19H" WS-ESC "[31m"
+                       "[X] PROCESS FAILED                            "
+                       WS-ESC "[0m" WITH NO ADVANCING
            ELSE
-               DISPLAY WS-ESC "[32m" WITH NO ADVANCING
-               DISPLAY "[+] PROCESS COMPLETED SUCCESSFULLY            " WITH NO ADVANCING
+               DISPLAY WS-ESC "[11;19H" WS-ESC "[32m"
+                       "[+] PROCESS COMPLETED SUCCESSFULLY            "
+                       WS-ESC "[0m" WITH NO ADVANCING
            END-IF
-           DISPLAY WS-ESC "[0m" WITH NO ADVANCING
-           *> Move cursor below table (Line 13) to exit cleanly
            DISPLAY WS-ESC "[13;1H".
 
        GET-TIMESTAMP.
