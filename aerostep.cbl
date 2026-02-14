@@ -184,11 +184,11 @@
                    X'0A'
                    BOX-V " Initialization       " BOX-V "           " BOX-V "         " BOX-V "                                 " BOX-V
                    X'0A'
-                   BOX-V " Pressure Test        " BOX-V "           " BOX-V "         " BOX-V "                                 " BOX-V
+                   BOX-V " Pressure (80-120)    " BOX-V "           " BOX-V "         " BOX-V "                                 " BOX-V
                    X'0A'
-                   BOX-V " Heat Treatment       " BOX-V "           " BOX-V "         " BOX-V "                                 " BOX-V
+                   BOX-V " Heat (200-300)       " BOX-V "           " BOX-V "         " BOX-V "                                 " BOX-V
                    X'0A'
-                   BOX-V " Quality Inspection   " BOX-V "           " BOX-V "         " BOX-V "                                 " BOX-V
+                   BOX-V " Quality (Min 70)     " BOX-V "           " BOX-V "         " BOX-V "                                 " BOX-V
                    X'0A'
                    WS-TABLE-DIV(1:240)
                    X'0A'
@@ -295,7 +295,7 @@
 
        PRESSURE-TEST.
            COMPUTE WS-PRESSURE = FUNCTION RANDOM * (MAX-PRESS - MIN-PRESS + 1) + MIN-PRESS
-           MOVE "Pressure Test" TO WS-FIELD-NAME
+           MOVE "Pressure (80-120)" TO WS-FIELD-NAME
            MOVE 7 TO UI-LINE
            MOVE WS-PRESSURE TO WS-FIELD-VALUE
            MOVE WS-PRESSURE TO WS-FIELD-VALUE-DISPLAY
@@ -309,7 +309,7 @@
 
        HEAT-TREATMENT.
            COMPUTE WS-HEAT = FUNCTION RANDOM * (MAX-HEAT - MIN-HEAT + 1) + MIN-HEAT
-           MOVE "Heat Treatment" TO WS-FIELD-NAME
+           MOVE "Heat (200-300)" TO WS-FIELD-NAME
            MOVE 8 TO UI-LINE
            MOVE WS-HEAT TO WS-FIELD-VALUE
            MOVE WS-HEAT TO WS-FIELD-VALUE-DISPLAY
@@ -323,7 +323,7 @@
 
        QUALITY-INSPECTION.
            COMPUTE WS-QUALITY = FUNCTION RANDOM * 100
-           MOVE "Quality Inspection" TO WS-FIELD-NAME
+           MOVE "Quality (Min 70)" TO WS-FIELD-NAME
            MOVE 9 TO UI-LINE
            MOVE WS-QUALITY TO WS-FIELD-VALUE
            MOVE WS-QUALITY TO WS-FIELD-VALUE-DISPLAY
