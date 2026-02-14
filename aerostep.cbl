@@ -171,18 +171,30 @@
        
        DRAW-UI-SHELL.
            PERFORM CLEAR-SCREEN
+           *> Optimization: Consolidated DISPLAY calls to reduce I/O overhead
            DISPLAY WS-BOX-TOP(1:240)
-           DISPLAY BOX-V "                        AEROSTEP TESTING INTERFACE                            " BOX-V
-           DISPLAY WS-TABLE-DIV(1:240)
-           DISPLAY BOX-V " Step                 " BOX-V " Status    " BOX-V " Value   " BOX-V " Timestamp                       " BOX-V
-           DISPLAY WS-TABLE-DIV(1:240)
-           DISPLAY BOX-V " Initialization       " BOX-V "           " BOX-V "         " BOX-V "                                 " BOX-V
-           DISPLAY BOX-V " Pressure Test        " BOX-V "           " BOX-V "         " BOX-V "                                 " BOX-V
-           DISPLAY BOX-V " Heat Treatment       " BOX-V "           " BOX-V "         " BOX-V "                                 " BOX-V
-           DISPLAY BOX-V " Quality Inspection   " BOX-V "           " BOX-V "         " BOX-V "                                 " BOX-V
-           DISPLAY WS-TABLE-DIV(1:240)
-           DISPLAY BOX-V " Overall Status:                                                      " BOX-V
-           DISPLAY WS-BOX-BOTTOM(1:240).
+                   X'0A'
+                   BOX-V "                        AEROSTEP TESTING INTERFACE                            " BOX-V
+                   X'0A'
+                   WS-TABLE-DIV(1:240)
+                   X'0A'
+                   BOX-V " Step                 " BOX-V " Status    " BOX-V " Value   " BOX-V " Timestamp                       " BOX-V
+                   X'0A'
+                   WS-TABLE-DIV(1:240)
+                   X'0A'
+                   BOX-V " Initialization       " BOX-V "           " BOX-V "         " BOX-V "                                 " BOX-V
+                   X'0A'
+                   BOX-V " Pressure Test        " BOX-V "           " BOX-V "         " BOX-V "                                 " BOX-V
+                   X'0A'
+                   BOX-V " Heat Treatment       " BOX-V "           " BOX-V "         " BOX-V "                                 " BOX-V
+                   X'0A'
+                   BOX-V " Quality Inspection   " BOX-V "           " BOX-V "         " BOX-V "                                 " BOX-V
+                   X'0A'
+                   WS-TABLE-DIV(1:240)
+                   X'0A'
+                   BOX-V " Overall Status:                                                      " BOX-V
+                   X'0A'
+                   WS-BOX-BOTTOM(1:240).
 
        UPDATE-UI-ROW.
            IF UI-LINE > 0
