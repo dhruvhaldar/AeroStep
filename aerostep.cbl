@@ -52,32 +52,37 @@
        01 WS-LOG-PTR                 PIC 9(3).
 
        *> Unicode Box Drawing Characters (UTF-8 Hex)
-       01 BOX-H                      PIC X(3) VALUE X'E29480'. *> ─
+       *> Only BOX-V is used in Procedure Division
        01 BOX-V                      PIC X(3) VALUE X'E29482'. *> │
-       01 BOX-TL                     PIC X(3) VALUE X'E2948C'. *> ┌
-       01 BOX-TR                     PIC X(3) VALUE X'E29490'. *> ┐
-       01 BOX-BL                     PIC X(3) VALUE X'E29494'. *> └
-       01 BOX-BR                     PIC X(3) VALUE X'E29498'. *> ┘
-       01 BOX-T-DOWN                 PIC X(3) VALUE X'E294AC'. *> ┬
-       01 BOX-T-UP                   PIC X(3) VALUE X'E294B4'. *> ┴
-       01 BOX-T-RIGHT                PIC X(3) VALUE X'E2949C'. *> ├
-       01 BOX-T-LEFT                 PIC X(3) VALUE X'E294A4'. *> ┤
-       01 BOX-CROSS                  PIC X(3) VALUE X'E294BC'. *> ┼
 
        *> Pre-constructed Unicode Lines (calculated for 80 cols)
        *> Top Border: ┌ + 78*─ + ┐
-       01 WS-BOX-TOP                 PIC X(240).
+       01 WS-BOX-TOP.
+           05 BOX-TOP-L  PIC X(3) VALUE X'E2948C'.
+           05 BOX-TOP-M  PIC X(234) VALUE ALL X'E29480'.
+           05 BOX-TOP-R  PIC X(3) VALUE X'E29490'.
+
        *> Bottom Border: └ + 78*─ + ┘
-       01 WS-BOX-BOTTOM              PIC X(240).
+       01 WS-BOX-BOTTOM.
+           05 BOX-BOT-L  PIC X(3) VALUE X'E29494'.
+           05 BOX-BOT-M  PIC X(234) VALUE ALL X'E29480'.
+           05 BOX-BOT-R  PIC X(3) VALUE X'E29498'.
+
        *> Table Header Sep: ├ + 22*─ + ┼ + 11*─ + ┼ + 9*─ + ┼ + 33*─ + ┤
-       01 WS-TABLE-DIV               PIC X(240).
-       *> Temp Line for initialization
-       01 WS-LINE-TEMP               PIC X(240).
+       01 WS-TABLE-DIV.
+           05 T-DIV-L    PIC X(3) VALUE X'E2949C'.
+           05 T-DIV-C1   PIC X(66) VALUE ALL X'E29480'.
+           05 T-DIV-S1   PIC X(3) VALUE X'E294BC'.
+           05 T-DIV-C2   PIC X(33) VALUE ALL X'E29480'.
+           05 T-DIV-S2   PIC X(3) VALUE X'E294BC'.
+           05 T-DIV-C3   PIC X(27) VALUE ALL X'E29480'.
+           05 T-DIV-S3   PIC X(3) VALUE X'E294BC'.
+           05 T-DIV-C4   PIC X(99) VALUE ALL X'E29480'.
+           05 T-DIV-R    PIC X(3) VALUE X'E294A4'.
 
        PROCEDURE DIVISION.
 
        MAIN-LOGIC.
-           PERFORM INITIALIZE-UI-RESOURCES
            OPEN EXTEND REPORT-FILE
            IF WS-FILE-STATUS NOT = "00" AND WS-FILE-STATUS NOT = "05"
                DISPLAY "CRITICAL ERROR: CANNOT OPEN LOG FILE. STATUS: " WS-FILE-STATUS
@@ -257,35 +262,6 @@
                   WITH POINTER WS-LOG-PTR
            COMPUTE WS-REC-LEN = WS-LOG-PTR - 1
            WRITE REPORT-RECORD.
-
-       INITIALIZE-UI-RESOURCES.
-           *> Initialize 78 chars of horizontal line
-           MOVE ALL X'E29480' TO WS-LINE-TEMP
-
-           *> Construct Top Box Line (80 cols)
-           STRING BOX-TL DELIMITED BY SIZE
-                  WS-LINE-TEMP(1:234) DELIMITED BY SIZE
-                  BOX-TR DELIMITED BY SIZE
-                  INTO WS-BOX-TOP
-
-           *> Construct Bottom Box Line (80 cols)
-           STRING BOX-BL DELIMITED BY SIZE
-                  WS-LINE-TEMP(1:234) DELIMITED BY SIZE
-                  BOX-BR DELIMITED BY SIZE
-                  INTO WS-BOX-BOTTOM
-
-           *> Construct Table Divider (80 cols)
-           *> Layout: 22 | 11 | 9 | 33
-           STRING BOX-T-RIGHT DELIMITED BY SIZE
-                  WS-LINE-TEMP(1:66) DELIMITED BY SIZE
-                  BOX-CROSS DELIMITED BY SIZE
-                  WS-LINE-TEMP(1:33) DELIMITED BY SIZE
-                  BOX-CROSS DELIMITED BY SIZE
-                  WS-LINE-TEMP(1:27) DELIMITED BY SIZE
-                  BOX-CROSS DELIMITED BY SIZE
-                  WS-LINE-TEMP(1:99) DELIMITED BY SIZE
-                  BOX-T-LEFT DELIMITED BY SIZE
-                  INTO WS-TABLE-DIV.
 
        INITIALIZATION.
            MOVE "Initialization" TO WS-FIELD-NAME
