@@ -216,6 +216,16 @@
                    BOX-V " Overall Status:                                                      " BOX-V
                    X'0A'
                    WS-BOX-BOTTOM(1:240).
+           PERFORM UPDATE-HEADER-INFO.
+
+       UPDATE-HEADER-INFO.
+           MOVE 1 TO WS-PTR
+           STRING WS-ESC "[2;55H"
+                  "Op: "
+                  FUNCTION TRIM(WS-OPERATOR-ID)
+                  DELIMITED BY SIZE INTO WS-UI-ROW-BUFFER
+                  WITH POINTER WS-PTR
+           DISPLAY WS-UI-ROW-BUFFER(1:WS-PTR - 1) WITH NO ADVANCING.
 
        UPDATE-UI-ROW.
            IF UI-LINE > 0
