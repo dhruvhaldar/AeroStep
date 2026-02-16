@@ -51,6 +51,21 @@
        01 WS-PTR                     PIC 9(3).
        01 WS-LOG-PTR                 PIC 9(3).
 
+       *> Pre-constructed Status Strings (Optimization)
+       01 WS-TEMP-STATUS             PIC X(20).
+       01 STR-PASSED.
+           05 PIC X VALUE X'1B'.
+           05 PIC X(4) VALUE "[32m".
+           05 PIC X(10) VALUE "[+] PASSED".
+           05 PIC X VALUE X'1B'.
+           05 PIC X(3) VALUE "[0m".
+       01 STR-FAILED.
+           05 PIC X VALUE X'1B'.
+           05 PIC X(4) VALUE "[31m".
+           05 PIC X(10) VALUE "[X] FAILED".
+           05 PIC X VALUE X'1B'.
+           05 PIC X(3) VALUE "[0m".
+
        *> Unicode Box Drawing Characters (UTF-8 Hex)
        *> Only BOX-V is used in Procedure Division
        01 BOX-V                      PIC X(3) VALUE X'E29482'. *> │
@@ -208,32 +223,23 @@
                *> Optimized: Direct buffering to avoid intermediate copies and reduce STRING overhead
                MOVE 1 TO WS-PTR
 
-               *> 1. Name
-               STRING WS-ESC "[" UI-LINE ";3H"
-                      WS-FIELD-NAME(1:20)
-                      WS-ESC "[" UI-LINE ";26H"
-                      DELIMITED BY SIZE INTO WS-UI-ROW-BUFFER
-                      WITH POINTER WS-PTR
-
-               *> 2. Status with Colors (Merged logic to avoid WS-STATUS-BUFFER)
                IF WS-STATUS(1:6) = "FAILED"
-                   STRING WS-ESC "[31m[X] " WS-STATUS(1:6) WS-ESC "[0m"
-                       DELIMITED BY SIZE INTO WS-UI-ROW-BUFFER
-                       WITH POINTER WS-PTR
+                   MOVE STR-FAILED TO WS-TEMP-STATUS
                ELSE
                    IF WS-STATUS(1:6) = "PASSED"
-                       STRING WS-ESC "[32m[+] " WS-STATUS(1:6) WS-ESC "[0m"
-                           DELIMITED BY SIZE INTO WS-UI-ROW-BUFFER
-                           WITH POINTER WS-PTR
+                       MOVE STR-PASSED TO WS-TEMP-STATUS
                    ELSE
+                       MOVE SPACES TO WS-TEMP-STATUS
                        STRING WS-ESC "[37m" WS-STATUS WS-ESC "[0m"
-                           DELIMITED BY SIZE INTO WS-UI-ROW-BUFFER
-                           WITH POINTER WS-PTR
+                           DELIMITED BY SIZE INTO WS-TEMP-STATUS
                    END-IF
                END-IF
 
-               *> 3. Value and Timestamp
-               STRING WS-ESC "[" UI-LINE ";38H"
+               STRING WS-ESC "[" UI-LINE ";3H"
+                      WS-FIELD-NAME(1:20)
+                      WS-ESC "[" UI-LINE ";26H"
+                      WS-TEMP-STATUS
+                      WS-ESC "[" UI-LINE ";38H"
                       WS-FIELD-VALUE-DISPLAY
                       WS-ESC "[" UI-LINE ";48H"
                       WS-BASE-TIMESTAMP(1:19)
