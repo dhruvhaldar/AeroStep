@@ -9,3 +9,7 @@
 ## 2025-05-27 - Text-Based Icons for Accessibility
 **Learning:** Color-coded status messages (Green/Red) are insufficient for accessibility (e.g., color blindness) or monochrome terminals. Adding distinct text icons (`[+]`/`[X]`) provides immediate, unambiguous feedback.
 **Action:** Augment status messages with symbolic prefixes (e.g., `[+]` for success, `[X]` for failure) to ensure state is communicable without color.
+
+## 2026-02-17 - Contextual Color Coding
+**Learning:** In tabular TUI displays, colorizing the data values (e.g., pressure, heat) to match their status (Red for failure, Green for success) creates a stronger visual link between cause and effect than coloring the status column alone.
+**Action:** Apply conditional ANSI color codes to value fields based on their validation state, ensuring to reset color immediately after the value.
