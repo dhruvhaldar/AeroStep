@@ -34,6 +34,8 @@
        01 QUALITY-THRESH             PIC 9(3) VALUE 70.
 
        01 WS-BASE-TIMESTAMP          PIC X(20).
+       *> Optimization: Cache formatted date string to reduce system calls
+       01 WS-FORMATTED-DATE          PIC X(11).
        01 WS-FIELD-NAME              PIC X(30).
        01 WS-FIELD-VALUE             PIC 9(4).
        01 WS-FIELD-VALUE-DISPLAY    PIC X(8).
@@ -103,6 +105,8 @@
                DISPLAY "CRITICAL ERROR: CANNOT OPEN LOG FILE. STATUS: " WS-FILE-STATUS
                STOP RUN
            END-IF
+
+           PERFORM SETUP-DATE
 
            PERFORM LOGIN-SEQUENCE
 
@@ -350,10 +354,15 @@
            END-IF
            DISPLAY WS-ESC "[13;1H".
 
+       SETUP-DATE.
+           ACCEPT WS-DATE FROM DATE YYYYMMDD
+           STRING WS-DATE(1:4) "/" WS-DATE(5:2) "/" WS-DATE(7:2) " "
+               DELIMITED BY SIZE INTO WS-FORMATTED-DATE.
+
        GET-TIMESTAMP.
-       ACCEPT WS-DATE FROM DATE YYYYMMDD
+       *> Optimization: Date is cached in WS-FORMATTED-DATE by SETUP-DATE
        ACCEPT WS-TIME FROM TIME
-       STRING WS-DATE(1:4) "/" WS-DATE(5:2) "/" WS-DATE(7:2) " "
+       STRING WS-FORMATTED-DATE DELIMITED BY SIZE
                WS-TIME(1:2) ":" WS-TIME(3:2) ":" WS-TIME(5:2)
            DELIMITED BY SIZE INTO WS-BASE-TIMESTAMP.
 
