@@ -49,6 +49,7 @@
        01 WS-ESC                    PIC X VALUE X'1B'.
 
        *> Buffers for UI optimization
+       01 WS-VAL-DISPLAY-BUFFER      PIC X(30).
        01 WS-UI-ROW-BUFFER           PIC X(200).
        01 WS-PTR                     PIC 9(3).
        01 WS-LOG-PTR                 PIC 9(3).
@@ -237,15 +238,21 @@
                *> Optimized: Direct buffering to avoid intermediate copies and reduce STRING overhead
                MOVE 1 TO WS-PTR
 
+               MOVE SPACES TO WS-VAL-DISPLAY-BUFFER
                IF WS-STATUS(1:6) = "FAILED"
                    MOVE STR-FAILED TO WS-TEMP-STATUS
+                   STRING WS-ESC "[31m" WS-FIELD-VALUE-DISPLAY WS-ESC "[0m"
+                       DELIMITED BY SIZE INTO WS-VAL-DISPLAY-BUFFER
                ELSE
                    IF WS-STATUS(1:6) = "PASSED"
                        MOVE STR-PASSED TO WS-TEMP-STATUS
+                       STRING WS-ESC "[32m" WS-FIELD-VALUE-DISPLAY WS-ESC "[0m"
+                           DELIMITED BY SIZE INTO WS-VAL-DISPLAY-BUFFER
                    ELSE
                        MOVE SPACES TO WS-TEMP-STATUS
                        STRING WS-ESC "[37m" WS-STATUS WS-ESC "[0m"
                            DELIMITED BY SIZE INTO WS-TEMP-STATUS
+                       MOVE WS-FIELD-VALUE-DISPLAY TO WS-VAL-DISPLAY-BUFFER
                    END-IF
                END-IF
 
@@ -254,7 +261,7 @@
                       WS-ESC "[" UI-LINE ";26H"
                       WS-TEMP-STATUS
                       WS-ESC "[" UI-LINE ";38H"
-                      WS-FIELD-VALUE-DISPLAY
+                      WS-VAL-DISPLAY-BUFFER
                       WS-ESC "[" UI-LINE ";48H"
                       WS-BASE-TIMESTAMP(1:19)
                       DELIMITED BY SIZE INTO WS-UI-ROW-BUFFER
