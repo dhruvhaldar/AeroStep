@@ -13,3 +13,7 @@
 ## 2026-02-17 - Contextual Color Coding
 **Learning:** In tabular TUI displays, colorizing the data values (e.g., pressure, heat) to match their status (Red for failure, Green for success) creates a stronger visual link between cause and effect than coloring the status column alone.
 **Action:** Apply conditional ANSI color codes to value fields based on their validation state, ensuring to reset color immediately after the value.
+
+## 2026-02-18 - Instructional Context
+**Learning:** Sparse interfaces (like login screens) can feel welcoming and professional by adding a single line of instructional text or system status.
+**Action:** Include a brief, helpful instruction or status message (e.g., "[i] Authorized Personnel Only") on entry screens to provide context and reduce cognitive load.

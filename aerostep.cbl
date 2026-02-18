@@ -133,12 +133,21 @@
            STOP RUN.
 
        LOGIN-SEQUENCE.
+           ACCEPT WS-ENV-CODE FROM ENVIRONMENT "AERO_PASS"
+           IF WS-ENV-CODE = SPACES THEN
+               DISPLAY "CRITICAL SECURITY ERROR: SECURITY CONFIGURATION MISSING."
+               DISPLAY "SYSTEM HALTED."
+               STOP RUN
+           ELSE
+               MOVE WS-ENV-CODE TO WS-EXPECTED-CODE
+           END-IF
+
            PERFORM CLEAR-SCREEN
            DISPLAY WS-BOX-TOP(1:240)
            DISPLAY BOX-V "                        SECURITY ACCESS CONTROL                               " BOX-V
            DISPLAY WS-BOX-BOTTOM(1:240)
            DISPLAY " "
-           DISPLAY "   OPERATOR IDENTIFICATION REQUIRED"
+           DISPLAY "   [i] Authorized Personnel Only. Activities Monitored."
            DISPLAY " "
            DISPLAY "   OPERATOR ID: " WITH NO ADVANCING
            ACCEPT WS-OPERATOR-ID
@@ -163,15 +172,6 @@
            ACCEPT WS-ACCESS-CODE
            DISPLAY WS-ESC "[0m"
            DISPLAY " "
-
-           ACCEPT WS-ENV-CODE FROM ENVIRONMENT "AERO_PASS"
-           IF WS-ENV-CODE = SPACES THEN
-               DISPLAY "CRITICAL SECURITY ERROR: SECURITY CONFIGURATION MISSING."
-               DISPLAY "SYSTEM HALTED."
-               STOP RUN
-           ELSE
-               MOVE WS-ENV-CODE TO WS-EXPECTED-CODE
-           END-IF
 
            PERFORM GET-TIMESTAMP
 
