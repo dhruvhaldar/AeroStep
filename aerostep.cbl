@@ -142,14 +142,21 @@
                MOVE WS-ENV-CODE TO WS-EXPECTED-CODE
            END-IF
 
-           PERFORM CLEAR-SCREEN
-           DISPLAY WS-BOX-TOP(1:240)
-           DISPLAY BOX-V "                        SECURITY ACCESS CONTROL                               " BOX-V
-           DISPLAY WS-BOX-BOTTOM(1:240)
-           DISPLAY " "
-           DISPLAY "   [i] Authorized Personnel Only. Activities Monitored."
-           DISPLAY " "
-           DISPLAY "   OPERATOR ID: " WITH NO ADVANCING
+           DISPLAY WS-ESC "[2J" WS-ESC "[H"
+                   WS-BOX-TOP(1:240)
+                   X'0A'
+                   BOX-V "                        SECURITY ACCESS CONTROL                               " BOX-V
+                   X'0A'
+                   WS-BOX-BOTTOM(1:240)
+                   X'0A'
+                   " "
+                   X'0A'
+                   "   [i] Authorized Personnel Only. Activities Monitored."
+                   X'0A'
+                   " "
+                   X'0A'
+                   "   OPERATOR ID: "
+                   WITH NO ADVANCING
            ACCEPT WS-OPERATOR-ID
            *> Sanitize input to prevent log injection
            INSPECT WS-OPERATOR-ID REPLACING ALL WS-ESC BY SPACE
@@ -191,14 +198,10 @@
                STOP RUN
            END-IF.
        
-       CLEAR-SCREEN.
-           *> Clear screen using ANSI escape sequence (GnuCOBOL compatible)
-           DISPLAY WS-ESC "[2J" WS-ESC "[H" WITH NO ADVANCING.
-       
        DRAW-UI-SHELL.
-           PERFORM CLEAR-SCREEN
-           *> Optimization: Consolidated DISPLAY calls to reduce I/O overhead
-           DISPLAY WS-BOX-TOP(1:240)
+           *> Optimization: Consolidated DISPLAY calls (Clear + Shell + Header) to reduce I/O overhead
+           DISPLAY WS-ESC "[2J" WS-ESC "[H"
+                   WS-BOX-TOP(1:240)
                    X'0A'
                    BOX-V "                        AEROSTEP TESTING INTERFACE                            " BOX-V
                    X'0A'
@@ -220,17 +223,11 @@
                    X'0A'
                    BOX-V " Overall Status:                                                      " BOX-V
                    X'0A'
-                   WS-BOX-BOTTOM(1:240).
-           PERFORM UPDATE-HEADER-INFO.
-
-       UPDATE-HEADER-INFO.
-           MOVE 1 TO WS-PTR
-           STRING WS-ESC "[2;55H"
-                  "Op: "
-                  FUNCTION TRIM(WS-OPERATOR-ID)
-                  DELIMITED BY SIZE INTO WS-UI-ROW-BUFFER
-                  WITH POINTER WS-PTR
-           DISPLAY WS-UI-ROW-BUFFER(1:WS-PTR - 1) WITH NO ADVANCING.
+                   WS-BOX-BOTTOM(1:240)
+                   WS-ESC "[2;55H"
+                   "Op: "
+                   FUNCTION TRIM(WS-OPERATOR-ID)
+                   WITH NO ADVANCING.
 
        UPDATE-UI-ROW.
            IF UI-LINE > 0
