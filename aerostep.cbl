@@ -46,6 +46,8 @@
        01 UI-LINE                   PIC 9(2) VALUE 0.
 
        01 WS-STATUS                 PIC X(10).
+       *> Optimization: Integer status code for faster conditional checks (Strength Reduction)
+       01 WS-STATUS-CODE            PIC 9 VALUE 0.
        01 WS-ESC                    PIC X VALUE X'1B'.
 
        *> Buffers for UI optimization
@@ -236,12 +238,12 @@
                MOVE 1 TO WS-PTR
 
                MOVE SPACES TO WS-VAL-DISPLAY-BUFFER
-               IF WS-STATUS(1:6) = "FAILED"
+               IF WS-STATUS-CODE = 2
                    MOVE STR-FAILED TO WS-TEMP-STATUS
                    STRING WS-ESC "[31m" WS-FIELD-VALUE-DISPLAY WS-ESC "[0m"
                        DELIMITED BY SIZE INTO WS-VAL-DISPLAY-BUFFER
                ELSE
-                   IF WS-STATUS(1:6) = "PASSED"
+                   IF WS-STATUS-CODE = 1
                        MOVE STR-PASSED TO WS-TEMP-STATUS
                        STRING WS-ESC "[32m" WS-FIELD-VALUE-DISPLAY WS-ESC "[0m"
                            DELIMITED BY SIZE INTO WS-VAL-DISPLAY-BUFFER
@@ -292,6 +294,7 @@
            MOVE 6 TO UI-LINE
            MOVE SPACES TO WS-FIELD-VALUE-DISPLAY
            MOVE "PASSED" TO WS-STATUS
+           MOVE 1 TO WS-STATUS-CODE
            PERFORM UPDATE-UI-ROW.
 
        PRESSURE-TEST.
@@ -305,9 +308,11 @@
                DELIMITED BY SIZE INTO WS-FIELD-VALUE-DISPLAY
            IF WS-PRESSURE < MIN-PRESS OR WS-PRESSURE > MAX-PRESS
                MOVE "FAILED" TO WS-STATUS
+               MOVE 2 TO WS-STATUS-CODE
                MOVE "Y" TO WS-FAILED
            ELSE
                MOVE "PASSED" TO WS-STATUS
+               MOVE 1 TO WS-STATUS-CODE
            END-IF
            PERFORM UPDATE-UI-ROW.
 
@@ -322,9 +327,11 @@
                DELIMITED BY SIZE INTO WS-FIELD-VALUE-DISPLAY
            IF WS-HEAT < MIN-HEAT OR WS-HEAT > MAX-HEAT
                MOVE "FAILED" TO WS-STATUS
+               MOVE 2 TO WS-STATUS-CODE
                MOVE "Y" TO WS-FAILED
            ELSE
                MOVE "PASSED" TO WS-STATUS
+               MOVE 1 TO WS-STATUS-CODE
            END-IF
            PERFORM UPDATE-UI-ROW.
 
@@ -339,9 +346,11 @@
                DELIMITED BY SIZE INTO WS-FIELD-VALUE-DISPLAY
            IF WS-QUALITY < QUALITY-THRESH
                MOVE "FAILED" TO WS-STATUS
+               MOVE 2 TO WS-STATUS-CODE
                MOVE "Y" TO WS-FAILED
            ELSE
                MOVE "PASSED" TO WS-STATUS
+               MOVE 1 TO WS-STATUS-CODE
            END-IF
            PERFORM UPDATE-UI-ROW.
 
