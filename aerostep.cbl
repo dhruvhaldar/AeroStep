@@ -69,6 +69,13 @@
            05 PIC X VALUE X'1B'.
            05 PIC X(3) VALUE "[0m".
 
+       01 WS-CURSOR-HIDE.
+           05 PIC X VALUE X'1B'.
+           05 PIC X(6) VALUE "[?25l".
+       01 WS-CURSOR-SHOW.
+           05 PIC X VALUE X'1B'.
+           05 PIC X(6) VALUE "[?25h".
+
        *> Unicode Box Drawing Characters (UTF-8 Hex)
        *> Only BOX-V is used in Procedure Division
        01 BOX-V                      PIC X(3) VALUE X'E29482'. *> │
@@ -111,6 +118,8 @@
 
            PERFORM LOGIN-SEQUENCE
 
+           DISPLAY WS-CURSOR-HIDE WITH NO ADVANCING
+
            PERFORM DRAW-UI-SHELL
 
            PERFORM INITIALIZATION
@@ -125,6 +134,8 @@
            END-IF
 
            PERFORM FINALIZE
+
+           DISPLAY WS-CURSOR-SHOW WITH NO ADVANCING
 
            CLOSE REPORT-FILE
            IF WS-FILE-STATUS NOT = "00"

@@ -17,3 +17,7 @@
 ## 2026-02-18 - Instructional Context
 **Learning:** Sparse interfaces (like login screens) can feel welcoming and professional by adding a single line of instructional text or system status.
 **Action:** Include a brief, helpful instruction or status message (e.g., "[i] Authorized Personnel Only") on entry screens to provide context and reduce cognitive load.
+
+## 2026-02-19 - TUI Cursor Stability
+**Learning:** Frequent screen repainting in a Terminal User Interface (TUI) causes visible cursor flicker, distracting the user.
+**Action:** Hide the cursor (`ESC [ ? 25 l`) before starting a batch of UI updates and restore it (`ESC [ ? 25 h`) immediately after completion to ensure a stable, professional appearance.
