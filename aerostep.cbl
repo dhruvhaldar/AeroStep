@@ -71,6 +71,13 @@
            05 PIC X VALUE X'1B'.
            05 PIC X(3) VALUE "[0m".
 
+       01 STR-SKIPPED.
+           05 PIC X VALUE X'1B'.
+           05 PIC X(4) VALUE "[37m".
+           05 PIC X(11) VALUE "[-] SKIPPED".
+           05 PIC X VALUE X'1B'.
+           05 PIC X(3) VALUE "[0m".
+
        01 WS-CURSOR-HIDE.
            05 PIC X VALUE X'1B'.
            05 PIC X(6) VALUE "[?25l".
@@ -127,12 +134,18 @@
            PERFORM INITIALIZATION
            IF WS-FAILED NOT = "Y"
                PERFORM PRESSURE-TEST
+           ELSE
+               PERFORM SKIP-PRESSURE
            END-IF
            IF WS-FAILED NOT = "Y"
                PERFORM HEAT-TREATMENT
+           ELSE
+               PERFORM SKIP-HEAT
            END-IF
            IF WS-FAILED NOT = "Y"
                PERFORM QUALITY-INSPECTION
+           ELSE
+               PERFORM SKIP-QUALITY
            END-IF
 
            PERFORM FINALIZE
@@ -259,10 +272,16 @@
                        STRING WS-ESC "[32m" WS-FIELD-VALUE-DISPLAY WS-ESC "[0m"
                            DELIMITED BY SIZE INTO WS-VAL-DISPLAY-BUFFER
                    ELSE
-                       MOVE SPACES TO WS-TEMP-STATUS
-                       STRING WS-ESC "[37m" WS-STATUS WS-ESC "[0m"
-                           DELIMITED BY SIZE INTO WS-TEMP-STATUS
-                       MOVE WS-FIELD-VALUE-DISPLAY TO WS-VAL-DISPLAY-BUFFER
+                       IF WS-STATUS-CODE = 3
+                           MOVE STR-SKIPPED TO WS-TEMP-STATUS
+                           STRING WS-ESC "[37m" WS-FIELD-VALUE-DISPLAY WS-ESC "[0m"
+                               DELIMITED BY SIZE INTO WS-VAL-DISPLAY-BUFFER
+                       ELSE
+                           MOVE SPACES TO WS-TEMP-STATUS
+                           STRING WS-ESC "[37m" WS-STATUS WS-ESC "[0m"
+                               DELIMITED BY SIZE INTO WS-TEMP-STATUS
+                           MOVE WS-FIELD-VALUE-DISPLAY TO WS-VAL-DISPLAY-BUFFER
+                       END-IF
                    END-IF
                END-IF
 
@@ -363,6 +382,30 @@
                MOVE "PASSED" TO WS-STATUS
                MOVE 1 TO WS-STATUS-CODE
            END-IF
+           PERFORM UPDATE-UI-ROW.
+
+       SKIP-PRESSURE.
+           MOVE "Pressure (80-120)" TO WS-FIELD-NAME
+           MOVE 7 TO UI-LINE
+           MOVE "---" TO WS-FIELD-VALUE-DISPLAY
+           MOVE "SKIPPED" TO WS-STATUS
+           MOVE 3 TO WS-STATUS-CODE
+           PERFORM UPDATE-UI-ROW.
+
+       SKIP-HEAT.
+           MOVE "Heat (200-300)" TO WS-FIELD-NAME
+           MOVE 8 TO UI-LINE
+           MOVE "---" TO WS-FIELD-VALUE-DISPLAY
+           MOVE "SKIPPED" TO WS-STATUS
+           MOVE 3 TO WS-STATUS-CODE
+           PERFORM UPDATE-UI-ROW.
+
+       SKIP-QUALITY.
+           MOVE "Quality (Min 70)" TO WS-FIELD-NAME
+           MOVE 9 TO UI-LINE
+           MOVE "---" TO WS-FIELD-VALUE-DISPLAY
+           MOVE "SKIPPED" TO WS-STATUS
+           MOVE 3 TO WS-STATUS-CODE
            PERFORM UPDATE-UI-ROW.
 
        FINALIZE.
