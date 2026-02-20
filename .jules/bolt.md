@@ -9,3 +9,7 @@
 ## 2026-02-17 - [COBOL Date Caching]
 **Learning:** Repeatedly calling `ACCEPT ... FROM DATE` in a loop (or frequent routine) incurs unnecessary system call overhead when the date does not change during execution.
 **Action:** Cache the date string in `WORKING-STORAGE` at initialization (e.g., `SETUP-DATE`) and only update the time component in the timestamp generation routine.
+
+## 2026-02-20 - [COBOL TUI Buffer Optimization]
+**Learning:** When removing intermediate fixed-width buffers to optimize `STRING` operations, potential "ghosting" artifacts (leftover characters from previous longer values) must be mitigated.
+**Action:** Ensure the optimized display logic either writes to cleared lines (e.g., sequential log style) or explicitly includes clearing sequences (like ANSI `[K`) if overwriting in place.

@@ -51,13 +51,11 @@
        01 WS-ESC                    PIC X VALUE X'1B'.
 
        *> Buffers for UI optimization
-       01 WS-VAL-DISPLAY-BUFFER      PIC X(30).
        01 WS-UI-ROW-BUFFER           PIC X(200).
        01 WS-PTR                     PIC 9(3).
        01 WS-LOG-PTR                 PIC 9(3).
 
        *> Pre-constructed Status Strings (Optimization)
-       01 WS-TEMP-STATUS             PIC X(20).
        01 STR-PASSED.
            05 PIC X VALUE X'1B'.
            05 PIC X(4) VALUE "[32m".
@@ -248,31 +246,47 @@
                *> Optimized: Direct buffering to avoid intermediate copies and reduce STRING overhead
                MOVE 1 TO WS-PTR
 
-               MOVE SPACES TO WS-VAL-DISPLAY-BUFFER
-               IF WS-STATUS-CODE = 2
-                   MOVE STR-FAILED TO WS-TEMP-STATUS
-                   STRING WS-ESC "[31m" WS-FIELD-VALUE-DISPLAY WS-ESC "[0m"
-                       DELIMITED BY SIZE INTO WS-VAL-DISPLAY-BUFFER
-               ELSE
-                   IF WS-STATUS-CODE = 1
-                       MOVE STR-PASSED TO WS-TEMP-STATUS
-                       STRING WS-ESC "[32m" WS-FIELD-VALUE-DISPLAY WS-ESC "[0m"
-                           DELIMITED BY SIZE INTO WS-VAL-DISPLAY-BUFFER
-                   ELSE
-                       MOVE SPACES TO WS-TEMP-STATUS
-                       STRING WS-ESC "[37m" WS-STATUS WS-ESC "[0m"
-                           DELIMITED BY SIZE INTO WS-TEMP-STATUS
-                       MOVE WS-FIELD-VALUE-DISPLAY TO WS-VAL-DISPLAY-BUFFER
-                   END-IF
-               END-IF
-
+               *> 1. Position and display Field Name
                STRING WS-ESC "[" UI-LINE ";3H"
                       WS-FIELD-NAME(1:20)
                       WS-ESC "[" UI-LINE ";26H"
-                      WS-TEMP-STATUS
-                      WS-ESC "[" UI-LINE ";38H"
-                      WS-VAL-DISPLAY-BUFFER
-                      WS-ESC "[" UI-LINE ";48H"
+                      DELIMITED BY SIZE INTO WS-UI-ROW-BUFFER
+                      WITH POINTER WS-PTR
+
+               *> 2. Display Status (Directly into buffer, no intermediate copy)
+               IF WS-STATUS-CODE = 2
+                   STRING STR-FAILED DELIMITED BY SIZE
+                          INTO WS-UI-ROW-BUFFER WITH POINTER WS-PTR
+               ELSE
+                   IF WS-STATUS-CODE = 1
+                       STRING STR-PASSED DELIMITED BY SIZE
+                              INTO WS-UI-ROW-BUFFER WITH POINTER WS-PTR
+                   ELSE
+                       STRING WS-ESC "[37m" WS-STATUS WS-ESC "[0m"
+                              DELIMITED BY SIZE INTO WS-UI-ROW-BUFFER WITH POINTER WS-PTR
+                   END-IF
+               END-IF
+
+               *> 3. Position and display Value (Directly into buffer)
+               STRING WS-ESC "[" UI-LINE ";38H"
+                      DELIMITED BY SIZE INTO WS-UI-ROW-BUFFER
+                      WITH POINTER WS-PTR
+
+               IF WS-STATUS-CODE = 2
+                   STRING WS-ESC "[31m" WS-FIELD-VALUE-DISPLAY WS-ESC "[0m"
+                       DELIMITED BY SIZE INTO WS-UI-ROW-BUFFER WITH POINTER WS-PTR
+               ELSE
+                   IF WS-STATUS-CODE = 1
+                       STRING WS-ESC "[32m" WS-FIELD-VALUE-DISPLAY WS-ESC "[0m"
+                           DELIMITED BY SIZE INTO WS-UI-ROW-BUFFER WITH POINTER WS-PTR
+                   ELSE
+                       STRING WS-FIELD-VALUE-DISPLAY
+                           DELIMITED BY SIZE INTO WS-UI-ROW-BUFFER WITH POINTER WS-PTR
+                   END-IF
+               END-IF
+
+               *> 4. Timestamp
+               STRING WS-ESC "[" UI-LINE ";48H"
                       WS-BASE-TIMESTAMP(1:19)
                       DELIMITED BY SIZE INTO WS-UI-ROW-BUFFER
                       WITH POINTER WS-PTR
