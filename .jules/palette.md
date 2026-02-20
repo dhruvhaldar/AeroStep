@@ -21,3 +21,7 @@
 ## 2026-02-19 - TUI Cursor Stability
 **Learning:** Frequent screen repainting in a Terminal User Interface (TUI) causes visible cursor flicker, distracting the user.
 **Action:** Hide the cursor (`ESC [ ? 25 l`) before starting a batch of UI updates and restore it (`ESC [ ? 25 h`) immediately after completion to ensure a stable, professional appearance.
+
+## 2026-02-20 - Explicit Skipped States
+**Learning:** In sequential processes where failure halts execution, leaving subsequent steps blank is ambiguous. Users may wonder if the process crashed or if the steps were forgotten.
+**Action:** Explicitly mark skipped steps with a neutral status (e.g., `[-] SKIPPED` in Grey/White) to confirm the process logic was followed but the steps were intentionally bypassed.
