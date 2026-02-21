@@ -262,7 +262,7 @@
                *> 1. Position and Write Field Name
                STRING WS-ESC "[" UI-LINE ";3H"
                       WS-FIELD-NAME(1:20)
-                      WS-ESC "[" UI-LINE ";26H"
+                      WS-ESC "[" UI-LINE ";25H"
                       DELIMITED BY SIZE INTO WS-UI-ROW-BUFFER
                       WITH POINTER WS-PTR
 

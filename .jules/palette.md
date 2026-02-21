@@ -25,3 +25,7 @@
 ## 2026-02-20 - Explicit Skipped States
 **Learning:** In sequential processes where failure halts execution, leaving subsequent steps blank is ambiguous. Users may wonder if the process crashed or if the steps were forgotten.
 **Action:** Explicitly mark skipped steps with a neutral status (e.g., `[-] SKIPPED` in Grey/White) to confirm the process logic was followed but the steps were intentionally bypassed.
+
+## 2026-02-21 - TUI Column Alignment
+**Learning:** In fixed-width TUI layouts, status messages must strictly adhere to column constraints. Adding a longer status like "SKIPPED" (11 chars) to a 11-char column requires starting at the very first available position (ignoring padding) to prevent overwriting the border.
+**Action:** When designing TUI tables, verify the maximum length of all dynamic content against the exact column width (excluding borders) and set the starting cursor position to the cell's absolute start if necessary.
