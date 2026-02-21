@@ -9,3 +9,7 @@
 ## 2026-02-17 - [COBOL Date Caching]
 **Learning:** Repeatedly calling `ACCEPT ... FROM DATE` in a loop (or frequent routine) incurs unnecessary system call overhead when the date does not change during execution.
 **Action:** Cache the date string in `WORKING-STORAGE` at initialization (e.g., `SETUP-DATE`) and only update the time component in the timestamp generation routine.
+
+## 2026-02-18 - [COBOL Direct Buffer Construction]
+**Learning:** Constructing the final display buffer directly using `STRING ... WITH POINTER` eliminates the overhead of intermediate `MOVE` and `STRING` operations into temporary buffers.
+**Action:** Remove intermediate buffers like `WS-VAL-DISPLAY-BUFFER` and construct complex UI rows directly in the target buffer to reduce memory copying.
