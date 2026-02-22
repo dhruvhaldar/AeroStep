@@ -33,7 +33,17 @@
        01 WS-QUALITY                 PIC 9(3).
        01 QUALITY-THRESH             PIC 9(3) VALUE 70.
 
-       01 WS-BASE-TIMESTAMP          PIC X(20).
+       *> Optimization: Group item for timestamp to allow direct component access
+       *> and avoid expensive STRING operations in the hot path.
+       *> Reduced to 19 chars to remove trailing space in logs.
+       01 WS-BASE-TIMESTAMP.
+           05 WS-TS-DATE      PIC X(11).
+           05 WS-TS-HH        PIC X(2).
+           05 WS-TS-SEP1      PIC X VALUE ":".
+           05 WS-TS-MM        PIC X(2).
+           05 WS-TS-SEP2      PIC X VALUE ":".
+           05 WS-TS-SS        PIC X(2).
+
        *> Optimization: Cache formatted date string to reduce system calls
        01 WS-FORMATTED-DATE          PIC X(11).
        01 WS-FIELD-NAME              PIC X(30).
@@ -440,12 +450,15 @@
            ACCEPT WS-DATE FROM DATE YYYYMMDD
            STRING WS-DATE(1:4) "/" WS-DATE(5:2) "/" WS-DATE(7:2) " "
                DELIMITED BY SIZE INTO WS-FORMATTED-DATE.
+           *> Optimization: Pre-fill static parts of timestamp buffer
+           MOVE WS-FORMATTED-DATE TO WS-TS-DATE.
 
        GET-TIMESTAMP.
-       *> Optimization: Date is cached in WS-FORMATTED-DATE by SETUP-DATE
+       *> Optimization: Direct MOVES are faster than STRING concatenation
+       *> Date and separators are already set by SETUP-DATE.
        ACCEPT WS-TIME FROM TIME
-       STRING WS-FORMATTED-DATE DELIMITED BY SIZE
-               WS-TIME(1:2) ":" WS-TIME(3:2) ":" WS-TIME(5:2)
-           DELIMITED BY SIZE INTO WS-BASE-TIMESTAMP.
+       MOVE WS-TIME(1:2) TO WS-TS-HH
+       MOVE WS-TIME(3:2) TO WS-TS-MM
+       MOVE WS-TIME(5:2) TO WS-TS-SS.
 
        END PROGRAM AEROSTEP-UI.
