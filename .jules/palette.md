@@ -29,3 +29,7 @@
 ## 2026-02-21 - TUI Column Alignment
 **Learning:** In fixed-width TUI layouts, status messages must strictly adhere to column constraints. Adding a longer status like "SKIPPED" (11 chars) to a 11-char column requires starting at the very first available position (ignoring padding) to prevent overwriting the border.
 **Action:** When designing TUI tables, verify the maximum length of all dynamic content against the exact column width (excluding borders) and set the starting cursor position to the cell's absolute start if necessary.
+
+## 2026-02-22 - Deliberate Pacing in TUI
+**Learning:** Terminal applications often execute tasks instantly, causing important feedback (like "Access Granted") to flash and disappear before the user can perceive it, creating a jarring experience.
+**Action:** Introduce a deliberate, short pause (e.g., 1 second) after critical success messages in TUI workflows to ensure the user has time to process the information before the screen clears.

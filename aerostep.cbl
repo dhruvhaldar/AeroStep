@@ -58,6 +58,7 @@
        01 WS-STATUS                 PIC X(10).
        *> Optimization: Integer status code for faster conditional checks (Strength Reduction)
        01 WS-STATUS-CODE            PIC 9 VALUE 0.
+       01 WS-SLEEP-SEC              PIC 9(9) BINARY VALUE 1.
        01 WS-ESC                    PIC X VALUE X'1B'.
 
        *> Buffers for UI optimization
@@ -218,6 +219,7 @@
 
            IF WS-ACCESS-CODE = WS-EXPECTED-CODE THEN
                DISPLAY "   " WS-ESC "[32m" "[+] ACCESS GRANTED." WS-ESC "[0m"
+               CALL "C$SLEEP" USING WS-SLEEP-SEC
                MOVE "LOGIN" TO WS-FIELD-NAME
                MOVE "SUCCESS" TO WS-STATUS
                MOVE SPACES TO WS-FIELD-VALUE-DISPLAY
