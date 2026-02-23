@@ -347,12 +347,18 @@
            WRITE REPORT-RECORD.
 
        INITIALIZATION.
+           *> Set "Processing..." status for immediate feedback
+           DISPLAY WS-ESC "[11;19H" WS-ESC "[33m"
+                   "[*] PROCESSING...                         "
+                   WS-ESC "[0m" WITH NO ADVANCING
+
            MOVE "Initialization" TO WS-FIELD-NAME
            MOVE 6 TO UI-LINE
            MOVE SPACES TO WS-FIELD-VALUE-DISPLAY
            MOVE "PASSED" TO WS-STATUS
            MOVE 1 TO WS-STATUS-CODE
-           PERFORM UPDATE-UI-ROW.
+           PERFORM UPDATE-UI-ROW
+           CALL "C$SLEEP" USING WS-SLEEP-SEC.
 
        PRESSURE-TEST.
            COMPUTE WS-PRESSURE = FUNCTION RANDOM * (MAX-PRESS - MIN-PRESS + 1) + MIN-PRESS
@@ -371,7 +377,8 @@
                MOVE "PASSED" TO WS-STATUS
                MOVE 1 TO WS-STATUS-CODE
            END-IF
-           PERFORM UPDATE-UI-ROW.
+           PERFORM UPDATE-UI-ROW
+           CALL "C$SLEEP" USING WS-SLEEP-SEC.
 
        HEAT-TREATMENT.
            COMPUTE WS-HEAT = FUNCTION RANDOM * (MAX-HEAT - MIN-HEAT + 1) + MIN-HEAT
@@ -390,7 +397,8 @@
                MOVE "PASSED" TO WS-STATUS
                MOVE 1 TO WS-STATUS-CODE
            END-IF
-           PERFORM UPDATE-UI-ROW.
+           PERFORM UPDATE-UI-ROW
+           CALL "C$SLEEP" USING WS-SLEEP-SEC.
 
        QUALITY-INSPECTION.
            COMPUTE WS-QUALITY = FUNCTION RANDOM * 100
@@ -409,7 +417,8 @@
                MOVE "PASSED" TO WS-STATUS
                MOVE 1 TO WS-STATUS-CODE
            END-IF
-           PERFORM UPDATE-UI-ROW.
+           PERFORM UPDATE-UI-ROW
+           CALL "C$SLEEP" USING WS-SLEEP-SEC.
 
        SKIP-PRESSURE.
            MOVE "Pressure (80-120)" TO WS-FIELD-NAME
