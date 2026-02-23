@@ -13,3 +13,7 @@
 ## 2026-02-18 - [COBOL Direct Buffer Construction]
 **Learning:** Constructing the final display buffer directly using `STRING ... WITH POINTER` eliminates the overhead of intermediate `MOVE` and `STRING` operations into temporary buffers.
 **Action:** Remove intermediate buffers like `WS-VAL-DISPLAY-BUFFER` and construct complex UI rows directly in the target buffer to reduce memory copying.
+
+## 2026-02-23 - [COBOL String Optimization]
+**Learning:** `FUNCTION TRIM` in COBOL involves scanning the string from right to left, which can be expensive in hot paths. Caching the trimmed length of static fields (like Operator ID) allows using direct substring access (reference modification) instead, avoiding repeated scans.
+**Action:** Identify static or semi-static text fields used in logging/output loops. Calculate their effective length once and use `(1:LEN)` slicing in subsequent operations.
