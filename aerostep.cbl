@@ -10,7 +10,9 @@
 
        DATA DIVISION.
        FILE SECTION.
-       FD  REPORT-FILE RECORD IS VARYING DEPENDING ON WS-REC-LEN.
+       *> Optimization: BLOCK CONTAINS 0 allows system-determined buffering for better I/O performance
+       FD  REPORT-FILE RECORD IS VARYING DEPENDING ON WS-REC-LEN
+           BLOCK CONTAINS 0 RECORDS.
        01  REPORT-RECORD               PIC X(120).
 
        WORKING-STORAGE SECTION.
@@ -20,6 +22,7 @@
 
        *> Login Variables
        01 WS-OPERATOR-ID              PIC X(20).
+       01 WS-OP-ID-LEN                PIC 9(2).
        01 WS-ACCESS-CODE              PIC X(128).
        01 WS-EXPECTED-CODE            PIC X(128).
        01 WS-ENV-CODE                 PIC X(128).
@@ -207,6 +210,10 @@
               WS-OPERATOR-ID(1:1) = "@"
                MOVE "_" TO WS-OPERATOR-ID(1:1)
            END-IF
+
+           *> Optimization: Cache trimmed length to avoid re-scanning in hot path
+           COMPUTE WS-OP-ID-LEN = FUNCTION LENGTH(FUNCTION TRIM(WS-OPERATOR-ID))
+
            DISPLAY " "
            DISPLAY "   ACCESS CODE (Hidden): " WITH NO ADVANCING
            *> Use ANSI Hidden attribute to mask input
@@ -334,8 +341,15 @@
            MOVE 1 TO WS-LOG-PTR
            STRING WS-BASE-TIMESTAMP DELIMITED BY SIZE
                   ", " DELIMITED BY SIZE
-                  FUNCTION TRIM(WS-OPERATOR-ID) DELIMITED BY SIZE
-                  ", " DELIMITED BY SIZE
+                  INTO REPORT-RECORD WITH POINTER WS-LOG-PTR
+
+           *> Optimization: Use cached length to avoid scanning the string repeatedly
+           IF WS-OP-ID-LEN > 0
+               STRING WS-OPERATOR-ID(1:WS-OP-ID-LEN) DELIMITED BY SIZE
+                      INTO REPORT-RECORD WITH POINTER WS-LOG-PTR
+           END-IF
+
+           STRING ", " DELIMITED BY SIZE
                   FUNCTION TRIM(WS-FIELD-NAME) DELIMITED BY SIZE
                   ", " DELIMITED BY SIZE
                   FUNCTION TRIM(WS-STATUS) DELIMITED BY SIZE
